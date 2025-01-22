@@ -1,0 +1,67 @@
+
+#############################################################
+
+#Debug schledluer
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros.py
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
+
+#############################################################
+
+#Robot Control
+
+source /opt/ros/noetic/setup.bash
+
+#ohne cali:
+
+#roslaunch ur_robot_driver ur5_bringup.launch limited:=true robot_ip:=192.168.0.100 
+
+#mit cali
+
+roslaunch ur_robot_driver ur5_bringup.launch limited:=true robot_ip:=192.168.0.100  kinematics_config:=${HOME}/my_robot_calibration.yaml
+
+#roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.11.11 kinematics_config:=${HOME}/ur5e_calibration.yaml
+
+######################
+
+source /opt/ros/noetic/setup.bash
+
+roslaunch ur5_moveit_config moveit_planning_execution.launch
+
+######################
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+roslaunch ur5_moveit_config moveit_rviz.launch
+
+#############################################################
+
+#Demo launch
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+roslaunch ur5_moveit_config demo.launch 
+
+#############################################################
+
+#Intel Realsense Launch
+
+roslaunch realsense2_camera demo_pointcloud.launch
+
+#############################################################
+
+#Python UR5 Control Launch
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+rosrun schledluer schledluer_ros.py
+
+#############################################################
+
+#Show ROS Node Graph
+
+rqt_graph
+

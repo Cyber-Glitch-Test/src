@@ -9,16 +9,17 @@ from geometry_msgs.msg import Pose
 from std_msgs.msg import String
 from moveit_msgs.msg import Grasp, PlaceLocation
 from moveit_commander.move_group import MoveGroupCommander
+import smach
 
 #================== x    y    z    w    Grp   2 Hum
-Poses = np.array([[-0.2688444412496273, -0.2684972317429937,0.44679036628638696,-0.8026291825923171,-0.5740107752837904,-0.07390584548842133,0.14434663526363303],
+Poses = np.array([[-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069],
                     [-0.2689336536616916,-0.2929305205611311,0.4467808596850957,-0.8026641190873571,-0.5739865856274126,-0.07377273857864448,0.1443166466216185],
                     [-0.2883698817917215,-0.2651904843469419,0.44669702333462596,-0.8026255278246236,-0.5739945533651698,-0.0740857787125935,0.14433922607493854]])#40: Positionier the base plate 1
 
 height_human_shoulder = 1.8
 
 #======Robot Control======
-
+-0.2684972317429937
 def move_to_target(move_group, target_pose):
     # Setze die Zielpose
     move_group.set_pose_target(target_pose)

@@ -39,6 +39,7 @@ pipeline = rs.pipeline()
 config = rs.config()
 background_removed_color = 153 # Grey
 
+
 # ====== Mediapipe ======
 mpPose = mp.solutions.pose
 pose = mpPose.Pose()
@@ -48,11 +49,11 @@ mpDraw = mp.solutions.drawing_utils
 config.enable_device(device)
 
 # # For worse FPS, but better resolution:
-# stream_res_x = 1280
-# stream_res_y = 720
+stream_res_x = 1280
+stream_res_y = 720
 # # For better FPS. but worse resolution:
-stream_res_x = 640
-stream_res_y = 480
+# stream_res_x = 640
+# stream_res_y = 480
 
 stream_fps = 30
 
@@ -68,6 +69,12 @@ depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 print(f"\tDepth Scale for Camera SN {device} is: {depth_scale}")
 
+
+#====== Get intrinsics ======
+intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
+fx, fy = intrinsics.fx, intrinsics.fy  # Brennweiten
+cx, cy = intrinsics.ppx, intrinsics.ppy  # Hauptpunkt (Principal Point)
+
 # ====== Set clipping distance ======
 clipping_distance_in_meters = 4
 clipping_distance = clipping_distance_in_meters / depth_scale
@@ -75,6 +82,7 @@ print(f"\tConfiguration Successful for SN {device}")
 
 # ====== Get and process images ====== 
 print(f"Starting to capture images on SN: {device}")
+
 
 while True:
     start_time = dt.datetime.today().timestamp()
@@ -90,7 +98,7 @@ while True:
 
     # Process images
     depth_image = np.asanyarray(aligned_depth_frame.get_data())
-    depth_image_flipped = cv2.flip(depth_image,1)
+    depth_image_flipped = cv2.flip(depth_image,-1)
     color_image = np.asanyarray(color_frame.get_data())
 
     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) # Depth image is 1 channel, while color image is 3
@@ -98,8 +106,8 @@ while True:
 
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-    images = cv2.flip(background_removed,1)
-    color_image = cv2.flip(color_image,1)
+    images = cv2.flip(background_removed,-1)
+    color_image = cv2.flip(color_image,-1)
     color_images_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
 
     # Process pose
@@ -135,13 +143,20 @@ while True:
 
         chest_distance = depth_image_flipped[y, x] * depth_scale
 
+        #Cest in World-Coords
+
+        z = chest_distance  # Tiefe in Metern
+        x_world = (x - cx) * z / fx
+        y_world = (y - cy) * z / fy
+    
+
         images = cv2.circle(images, chest_marker_pos, radius=5, color=(0,255,0),thickness=1)
 
         #send ROS mgs
         if not rospy.is_shutdown():
-            translation = (x, y, chest_distance)
-            b.sendTransform(translation, rotation, Time.now(), 'ignite_robot', '/base_link')
-
+            translation = (x_world, y_world, z)
+            b.sendTransform(translation, rotation, Time.now(), 'chest', '/base_link')
+            print(translation)
         # Display the distances on the image
         distance_text_right_shoulder = f"Distance to right Shoulder({right_shoulder_distance:0.3} m)"
         distance_text_left_shoulder = f"Distance to left Shoulder({left_shoulder_distance:0.3} m)"
@@ -169,6 +184,9 @@ while True:
     if key & 0xFF == ord('q') or key == 27:
         print(f"User pressed break key for SN: {device}")
         break
+
+    #test
+    
 
 print(f"Application Closing")
 pipeline.stop()

@@ -51,6 +51,10 @@ roslaunch ur5_moveit_config demo.launch
 
 roslaunch realsense2_camera demo_pointcloud.launch
 
+roslaunch rgbd_launch rs_rgbd.launch 
+
+roslaunch realsense2_camera rs_aligned_depth.launch
+
 #############################################################
 
 #Python UR5 Control Launch

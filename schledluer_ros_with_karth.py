@@ -78,6 +78,12 @@ def moveit_control_node():
             rospy.loginfo("Roboter Pose...")
             waypoints.append(move_group.get_current_pose().pose)
             print(waypoints)
+            last_waypoint = waypoints[-1]    
+            position = last_waypoint.position
+            orientation = last_waypoint.orientation
+            coordinates = f"Position: {position.x}, {position.y}, {position.z}"
+            orientation_values = f"Orientation: {orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}"
+            print(coordinates + " | " + orientation_values)
             continue
         elif newuser == "n":
             print("exiting")

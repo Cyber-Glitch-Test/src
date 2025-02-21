@@ -15,11 +15,20 @@ import rospy
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
 import sys
-#================== x    y    z    w    Grp   2 Hum
+
+
+#======Gripper Control======
 Poses = np.array([[-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069],
                     [-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684],
                     [-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617],
                     [-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]])#40: Positionier the base plate 1
+
+rb_arm_home     = np.array([-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
+rb_arm_over_m1  = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m1    = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_on_hum   = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
+
+
 
 height_human_shoulder = 1.8
 Human_detection = True
@@ -69,6 +78,22 @@ class GripperController:
 
 
 #======Robot Control======
+
+def Convert_to_Pose(koords):
+    # Konvertiere koords in Pose
+    target_pose = Pose()
+    target_pose.position.x = koords[0]
+    target_pose.position.y = koords[1]
+    target_pose.position.z = koords[2]
+    target_pose.orientation.x = koords[3]
+    target_pose.orientation.y = koords[4]
+    target_pose.orientation.z = koords[5]
+    target_pose.orientation.w = koords[6]
+    return target_pose
+    
+
+
+
 
 def move_to_target(move_group, target_pose):
     move_group.set_pose_target(target_pose)
@@ -159,14 +184,9 @@ class M1PickUp(smach.State):
 
         rospy.loginfo('Executing state: M1PickUp')
         
-        target_pose = Pose()
-        target_pose.position.x = Poses[0][0]
-        target_pose.position.y = Poses[0][1]
-        target_pose.position.z = Poses[0][2]
-        target_pose.orientation.x = Poses[0][3]
-        target_pose.orientation.y = Poses[0][4]
-        target_pose.orientation.z = Poses[0][5]
-        target_pose.orientation.w = Poses[0][6]
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_home)):
+            return 'succeeded'  # Oder 'aborted'
+
 
         
         rospy.loginfo("bereit für M1 aufnehmen")
@@ -178,51 +198,30 @@ class M1PickUp(smach.State):
         self.gripper_controller.send_gripper_command('open')
         rospy.sleep(2)
         
-        if not move_to_target(self.group, target_pose):
-            return 'succeeded'  # Hier könntest du auch 'aborted' zurückgeben
 
 
         rospy.loginfo("Zweite Bewegung...")
-        target_pose.position.x = Poses[1][0]
-        target_pose.position.y = Poses[1][1]
-        target_pose.position.z = Poses[1][2]
-        target_pose.orientation.x = Poses[1][3]
-        target_pose.orientation.y = Poses[1][4]
-        target_pose.orientation.z = Poses[1][5]
-        target_pose.orientation.w = Poses[1][6]
-        
-
-        if not move_to_target(self.group, target_pose):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1)):
             return 'succeeded'  # Oder 'aborted'
+
 
         rospy.loginfo("Dritte Bewegung...")
-        target_pose.position.x = Poses[2][0]
-        target_pose.position.y = Poses[2][1]
-        target_pose.position.z = Poses[2][2]
-        target_pose.orientation.x = Poses[2][3]
-        target_pose.orientation.y = Poses[2][4]
-        target_pose.orientation.z = Poses[2][5]
-        target_pose.orientation.w = Poses[2][6]
-        
-        if not move_to_target(self.group, target_pose):
+
+
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1)):
             return 'succeeded'  # Oder 'aborted'
+
 
         self.gripper_controller.send_gripper_command('close')
         rospy.sleep(2)
         
-
-        rospy.loginfo("Vierte Bewegung...")
-        target_pose.position.x = Poses[3][0]
-        target_pose.position.y = Poses[3][1]
-        target_pose.position.z = Poses[3][2]
-        target_pose.orientation.x = Poses[3][3]
-        target_pose.orientation.y = Poses[3][4]
-        target_pose.orientation.z = Poses[3][5]
-        target_pose.orientation.w = Poses[3][6]
-
-        if not move_to_target(self.group, target_pose):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1)):
             return 'succeeded'  # Oder 'aborted'
 
+        rospy.loginfo("Vierte Bewegung...")
+
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum)):
+            return 'succeeded'  # Oder 'aborted'
 
         return 'succeeded'
 

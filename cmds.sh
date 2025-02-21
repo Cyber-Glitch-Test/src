@@ -9,6 +9,9 @@ chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
 
 chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
 
+chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
+
+
 #############################################################
 
 #Robot Control
@@ -63,9 +66,32 @@ source /home/ca/catkin_ws/devel/setup.bash
 
 rosrun schledluer schledluer_ros.py
 
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
+
+rosrun schledluer smach_ros_moveit.py
+
+rosrun schledluer schledluer_ros_with_karth.py
+
+rosrun schledluer Shoulder_Tracking_ros.py
+
 #############################################################
 
 #Show ROS Node Graph
 
 rqt_graph
 
+#############################################################
+
+#Start Robotiq node
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+#Controll Node 
+
+source ~/catkin_ws/devel/setup.bash
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py

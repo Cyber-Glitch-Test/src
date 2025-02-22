@@ -17,16 +17,23 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inpu
 import sys
 
 
-#======Koords für Roboterarm======
-rb_arm_home     = np.array([-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
-rb_arm_over_m1  = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m1    = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_on_hum   = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
-rb_arm_over_
 
+#======Posen für Roboterarm======
+rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
+rb_arm_over_m1          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m1            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
+rb_arm_over_m2          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m2            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_over_m3          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m3            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_over_m4          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
 
-height_human_shoulder = 1.8
-Human_detection = True
+height_hum_shoulder = 1.8
+Hum_det = True
+savety_koord_1 = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335])
+savety_koord_2 = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335])
 
 #======Gripper Control======
 
@@ -69,8 +76,6 @@ class GripperController:
         # Sende den Befehl an den Gripper
         rospy.loginfo(f"Sende Befehl: {action_type}")
         self.pub.publish(self.command)
-
-
 
 #======Robot Control======
 
@@ -147,26 +152,16 @@ def moveit_control_node():
     # Shutdown von MoveIt und ROS-Verbindungen
     # moveit_commander.roscpp_shutdown()
 
+def point_inside(point):   
+    xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
+    yield xmin < point[0] < xmax
+    ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
+    yield ymin < point[1] < ymax
+    zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
+    yield zmin < point[2] < zmax
+    rect = (savety_koord_1, savety_koord_2)
 
 ################################ Initialisiere Smachstates ################################
-
-# class PositionBasePlate1(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PositionBasePlate1')
-#         ####
-#         return 'succeeded'
-
-#  class PositionBasePlate2(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PositionBasePlate2')
-#         ####
-#         return 'succeeded'
 
 class M1PickUp(smach.State):
     def __init__(self,group_name):
@@ -184,10 +179,7 @@ class M1PickUp(smach.State):
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_home)):
             return 'succeeded'  # Oder 'aborted'
 
-
-        
         rospy.loginfo("bereit für M1 aufnehmen")
-
         self.gripper_controller.send_gripper_command('activate')
         rospy.sleep(2)
         self.gripper_controller.send_gripper_command('close')
@@ -215,13 +207,8 @@ class M1PickUp(smach.State):
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1)):
             return 'succeeded'  # Oder 'aborted'
 
-        rospy.loginfo("Vierte Bewegung...")
-
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum)):
-            return 'succeeded'  # Oder 'aborted'
 
         return 'succeeded'
-
 
 class M1Hold(smach.State):
     def __init__(self):
@@ -241,15 +228,6 @@ class M1HoldHD(smach.State):
         ####
         return 'succeeded'
 
-#  class AluBlck1PickUp(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: AluBlck1PickUp')
-#         ####
-#         return 'succeeded'
-
 class M1Positioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -258,24 +236,6 @@ class M1Positioning(smach.State):
         rospy.loginfo('Executing state: M1Positioning')
         ####
         return 'succeeded'
-
-# class M1PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M1PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class M1Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M1Fixing')
-#         ####
-#         return 'succeeded'
 
 class M2PickUp(smach.State):
     def __init__(self):
@@ -304,24 +264,6 @@ class M2HoldHD(smach.State):
         ####
         return 'succeeded'
 
-# class AluBlck2PickUp(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: AluBlck2PickUp')
-#         ####
-#         return 'succeeded'
-
-# class M2Assembly(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M2Assembly')
-#         ####
-#         return 'succeeded'
-
 class M2Positioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -330,24 +272,6 @@ class M2Positioning(smach.State):
         rospy.loginfo('Executing state: M2Positioning')
         ####
         return 'succeeded'
-
-# class M2PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M2PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class M2Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M2Fixing')
-#         ####
-#         return 'succeeded'
 
 class M3PickUp(smach.State):
     def __init__(self):
@@ -376,24 +300,6 @@ class M3HoldHD(smach.State):
         ####
         return 'succeeded'
 
-# class AluBlck3PickUp(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: AluBlck3PickUp')
-#         ####
-#         return 'succeeded'
-
-# class M3Assembly(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M3Assembly')
-#         ####
-#         return 'succeeded'
-
 class M3Positioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -402,24 +308,6 @@ class M3Positioning(smach.State):
         rospy.loginfo('Executing state: M3Positioning')
         ####
         return 'succeeded'
-
-# class M3PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M3PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class M3Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M3Fixing')
-#         ####
-#         return 'succeeded'
 
 class M4PickUp(smach.State):
     def __init__(self):
@@ -448,24 +336,6 @@ class M4HoldHD(smach.State):
         ####
         return 'succeeded'
 
-# class AluBlck4PickUp(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: AluBlck4PickUp')
-#         ####
-#         return 'succeeded'
-
-# class M4Assembly(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M4Assembly')
-#         ####
-#         return 'succeeded'
-
 class M4Positioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -474,24 +344,6 @@ class M4Positioning(smach.State):
         rospy.loginfo('Executing state: M4Positioning')
         ####
         return 'succeeded'
-
-# class M4PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M4PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class M4Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: M4Fixing')
-#         ####
-#         return 'succeeded'
 
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -502,24 +354,6 @@ class PCB1PickUpAndPositioning(smach.State):
         ####
         return 'succeeded'
 
-# class PCB1PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PCB1PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class PCB1Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PCB1Fixing')
-#         ####
-#         return 'succeeded'
-
 class PCB2PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -528,24 +362,6 @@ class PCB2PickUpAndPositioning(smach.State):
         rospy.loginfo('Executing state: PCB2PickUpAndPositioning')
         ####
         return 'succeeded'
-
-# class PCB2PickUpFixScrew(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PCB2PickUpFixScrew')
-#         ####
-#         return 'succeeded'
-
-# class PCB2Fixing(smach.State):
-#     def __init__(self):
-#         smach.State.__init__(self, outcomes=['succeeded'])
-
-#     def execute(self, userdata):
-#         rospy.loginfo('Executing state: PCB2Fixing')
-#         ####
-#         return 'succeeded'
 
 class CopperFixing1To6(smach.State):
     def __init__(self):
@@ -582,7 +398,6 @@ class BatteryFixing(smach.State):
         rospy.loginfo('Executing state: BatteryFixing')
         ####
         return 'succeeded'
-
 
 
 def tracking_listener():

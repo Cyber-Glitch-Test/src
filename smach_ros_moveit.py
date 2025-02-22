@@ -17,8 +17,6 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as out
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
 import sys
 
-
-
 #======Posen für Roboterarm======
 rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
 rb_arm_over_m1          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
@@ -79,92 +77,92 @@ class GripperController:
         self.pub.publish(self.command)
 
 #======Robot Control======
+class RobotController:
+    def Convert_to_Pose(koords):
+        # Konvertiere koords in Pose
+        target_pose = Pose()
+        target_pose.position.x = koords[0]
+        target_pose.position.y = koords[1]
+        target_pose.position.z = koords[2]
+        target_pose.orientation.x = koords[3]
+        target_pose.orientation.y = koords[4]
+        target_pose.orientation.z = koords[5]
+        target_pose.orientation.w = koords[6]
+        return target_pose
+        
 
-def Convert_to_Pose(koords):
-    # Konvertiere koords in Pose
-    target_pose = Pose()
-    target_pose.position.x = koords[0]
-    target_pose.position.y = koords[1]
-    target_pose.position.z = koords[2]
-    target_pose.orientation.x = koords[3]
-    target_pose.orientation.y = koords[4]
-    target_pose.orientation.z = koords[5]
-    target_pose.orientation.w = koords[6]
-    return target_pose
-    
+    def move_to_target(move_group, target_pose,speed):
+        set_speed(speed)
+        move_group.set_pose_target(target_pose)
+        rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
-def move_to_target(move_group, target_pose,speed):
-    set_speed(speed)
-    move_group.set_pose_target(target_pose)
-    rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
+        success = move_group.go(wait=True)
+        
+        if success:
+            rospy.loginfo("Bewegung erfolgreich!")
+            return True
+        else:
+            rospy.logwarn("Bewegung fehlgeschlagen!")
+            move_group.stop()
+            move_group.clear_pose_targets()
+            return False
 
-    success = move_group.go(wait=True)
-    
-    if success:
-        rospy.loginfo("Bewegung erfolgreich!")
-        return True
-    else:
-        rospy.logwarn("Bewegung fehlgeschlagen!")
+
+    def stop_robot(move_group):
+        # Stoppe die Bewegung des Roboters
         move_group.stop()
-        move_group.clear_pose_targets()
-        return False
+        rospy.loginfo("Roboter gestoppt!")
 
 
-def stop_robot(move_group):
-    # Stoppe die Bewegung des Roboters
-    move_group.stop()
-    rospy.loginfo("Roboter gestoppt!")
+    def reset_robot(move_group):
+        # Setze den Roboter auf die Home-Position
+        move_group.set_named_target("home")
+        move_group.go(wait=True)
+        rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
 
-def reset_robot(move_group):
-    # Setze den Roboter auf die Home-Position
-    move_group.set_named_target("home")
-    move_group.go(wait=True)
-    rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
+    def moveit_control_node():
+
+        # Initialisiere MoveIt und ROS
+        moveit_commander.roscpp_initialize(sys.argv)
+        rospy.init_node('ur5_moveit_control', anonymous=True)
+
+        # Erstelle den MoveGroupCommander für den UR5 Roboter
+        group_name = "manipulator" 
+        move_group = MoveGroupCommander(group_name)
+
+        # Setze die maximale Geschwindigkeit und Beschleunigung
+        move_group.set_max_velocity_scaling_factor(0.1)      # Geschwindigkeit 10% der maximalen Geschwindigkeit
+        move_group.set_max_acceleration_scaling_factor(0.1)  # Beschleunigung 10% der maximalen Beschleunigung
+
+        # Referenzrahmen
+        planning_frame = move_group.get_planning_frame()
+        rospy.loginfo("Planungsrahmen: %s", planning_frame)
+        p = PoseStamped()
+        p.pose.position.x = 0.
+        p.pose.position.y = 0.
+        p.pose.position.z = 0.
+        planning_frame.add_box("Tisch", p, (0.5, 1.5, 0.6))
+
+        # Zielrahmen für den Endeffektor
+        eef_link = move_group.get_end_effector_link()
+        rospy.loginfo("Endeffektor-Link: %s", eef_link)
+
+        # Shutdown von MoveIt und ROS-Verbindungen
+        # moveit_commander.roscpp_shutdown()
 
 
-def moveit_control_node():
-
-    # Initialisiere MoveIt und ROS
-    moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('ur5_moveit_control', anonymous=True)
-
-    # Erstelle den MoveGroupCommander für den UR5 Roboter
-    group_name = "manipulator" 
-    move_group = MoveGroupCommander(group_name)
-
-    # Setze die maximale Geschwindigkeit und Beschleunigung
-    move_group.set_max_velocity_scaling_factor(0.1)      # Geschwindigkeit 10% der maximalen Geschwindigkeit
-    move_group.set_max_acceleration_scaling_factor(0.1)  # Beschleunigung 10% der maximalen Beschleunigung
-
-    # Referenzrahmen
-    planning_frame = move_group.get_planning_frame()
-    rospy.loginfo("Planungsrahmen: %s", planning_frame)
-    p = PoseStamped()
-    p.pose.position.x = 0.
-    p.pose.position.y = 0.
-    p.pose.position.z = 0.
-    planning_frame.add_box("Tisch", p, (0.5, 1.5, 0.6))
-
-    # Zielrahmen für den Endeffektor
-    eef_link = move_group.get_end_effector_link()
-    rospy.loginfo("Endeffektor-Link: %s", eef_link)
-
-    # Shutdown von MoveIt und ROS-Verbindungen
-    # moveit_commander.roscpp_shutdown()
+    def point_inside(point):   
+        xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
+        yield xmin < point[0] < xmax
+        ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
+        yield ymin < point[1] < ymax
+        zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
+        yield zmin < point[2] < zmax
+        rect = (savety_koord_1, savety_koord_2)
 
 
-def point_inside(point):   
-    xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
-    yield xmin < point[0] < xmax
-    ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
-    yield ymin < point[1] < ymax
-    zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
-    yield zmin < point[2] < zmax
-    rect = (savety_koord_1, savety_koord_2)
-
-
-def set_speed(speed):
+    def set_speed(speed):
     rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
     rtde_c.sendsendSpeedSlider(speed)
 
@@ -183,7 +181,7 @@ class M1PickUp(smach.State):
 
         rospy.loginfo('Executing state: M1PickUp')
         
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_home),5):
+        if not RobotController.move_to_target(self.group, RobotController.Convert_to_Pose(rb_arm_home),5):
             return 'succeeded'  # Oder 'aborted'
 
         rospy.loginfo("bereit für M1 aufnehmen")
@@ -195,18 +193,18 @@ class M1PickUp(smach.State):
         rospy.sleep(2)
         
         rospy.loginfo("Zweite Bewegung...")
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
 
         rospy.loginfo("Dritte Bewegung...")
 
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
+        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
             return 'succeeded'  # Oder 'aborted'
 
         self.gripper_controller.send_gripper_command('close')
         rospy.sleep(2)
         
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
         return 'succeeded'
 
@@ -409,7 +407,7 @@ def tracking_listener():
 if __name__ == "__main__":
     try:
         # Starte die ROS-Node
-        moveit_control_node()
+        RobotController.moveit_control_node()
     except rospy.ROSInterruptException:
         pass
     

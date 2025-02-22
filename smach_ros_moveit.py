@@ -12,6 +12,7 @@ from moveit_commander.move_group import MoveGroupCommander
 import smach
 import smach_ros
 import rospy
+import rtde_control
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
 import sys
@@ -92,9 +93,9 @@ def Convert_to_Pose(koords):
     return target_pose
     
 
-def move_to_target(move_group, target_pose):
+def move_to_target(move_group, target_pose,speed):
+    set_speed(speed)
     move_group.set_pose_target(target_pose)
-    
     rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
     success = move_group.go(wait=True)
@@ -152,6 +153,7 @@ def moveit_control_node():
     # Shutdown von MoveIt und ROS-Verbindungen
     # moveit_commander.roscpp_shutdown()
 
+
 def point_inside(point):   
     xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
     yield xmin < point[0] < xmax
@@ -160,6 +162,11 @@ def point_inside(point):
     zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
     yield zmin < point[2] < zmax
     rect = (savety_koord_1, savety_koord_2)
+
+
+def set_speed(speed):
+    rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
+    rtde_c.sendsendSpeedSlider(speed)
 
 ################################ Initialisiere Smachstates ################################
 
@@ -176,7 +183,7 @@ class M1PickUp(smach.State):
 
         rospy.loginfo('Executing state: M1PickUp')
         
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_home)):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_home),5):
             return 'succeeded'  # Oder 'aborted'
 
         rospy.loginfo("bereit für M1 aufnehmen")
@@ -187,27 +194,20 @@ class M1PickUp(smach.State):
         self.gripper_controller.send_gripper_command('open')
         rospy.sleep(2)
         
-
-
         rospy.loginfo("Zweite Bewegung...")
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1)):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
-
 
         rospy.loginfo("Dritte Bewegung...")
 
-
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1)):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
             return 'succeeded'  # Oder 'aborted'
-
 
         self.gripper_controller.send_gripper_command('close')
         rospy.sleep(2)
         
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1)):
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
-
-
         return 'succeeded'
 
 class M1Hold(smach.State):

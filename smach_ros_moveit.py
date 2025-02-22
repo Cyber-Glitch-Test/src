@@ -92,7 +92,7 @@ class RobotController:
         
 
     def move_to_target(move_group, target_pose,speed):
-        set_speed(speed)
+        RobotController.set_speed(speed)
         move_group.set_pose_target(target_pose)
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
@@ -163,8 +163,8 @@ class RobotController:
 
 
     def set_speed(speed):
-    rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
-    rtde_c.sendsendSpeedSlider(speed)
+        rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
+        rtde_c.sendsendSpeedSlider(speed)
 
 ################################ Initialisiere Smachstates ################################
 
@@ -193,18 +193,18 @@ class M1PickUp(smach.State):
         rospy.sleep(2)
         
         rospy.loginfo("Zweite Bewegung...")
-        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+        if not RobotController.move_to_target(self.group, RobotController.Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
 
         rospy.loginfo("Dritte Bewegung...")
 
-        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
+        if not RobotController.move_to_target(self.group, RobotController.Convert_to_Pose(rb_arm_on_m1),5):
             return 'succeeded'  # Oder 'aborted'
 
         self.gripper_controller.send_gripper_command('close')
         rospy.sleep(2)
         
-        if not RobotController.move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+        if not RobotController.move_to_target(self.group, RobotController.Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
         return 'succeeded'
 

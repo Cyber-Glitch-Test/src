@@ -78,6 +78,7 @@ class GripperController:
 
 #======Robot Control======
 class RobotController:
+
     def Convert_to_Pose(koords):
         # Konvertiere koords in Pose
         target_pose = Pose()
@@ -92,6 +93,7 @@ class RobotController:
         
 
     def move_to_target(move_group, target_pose,speed):
+        # bewege den Roboter zu Ziel Position
         RobotController.set_speed(speed)
         move_group.set_pose_target(target_pose)
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
@@ -131,11 +133,11 @@ class RobotController:
         group_name = "manipulator" 
         move_group = MoveGroupCommander(group_name)
 
-        # Setze die maximale Geschwindigkeit und Beschleunigung
+        # Setze die maximale Geschwindigkeit und Beschleunigung (legacy)
         move_group.set_max_velocity_scaling_factor(0.1)      # Geschwindigkeit 10% der maximalen Geschwindigkeit
         move_group.set_max_acceleration_scaling_factor(0.1)  # Beschleunigung 10% der maximalen Beschleunigung
 
-        # Referenzrahmen
+        # Referenzrahmen mit Tisch als Fläche (untested & koords von Tisch fehlen)
         planning_frame = move_group.get_planning_frame()
         rospy.loginfo("Planungsrahmen: %s", planning_frame)
         p = PoseStamped()
@@ -152,7 +154,9 @@ class RobotController:
         # moveit_commander.roscpp_shutdown()
 
 
-    def point_inside(point):   
+    def point_inside(point):  
+
+        #Checke ob Übergabe-punkt innerhalb sicherheits-Quader ist (untested)
         xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
         yield xmin < point[0] < xmax
         ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
@@ -163,6 +167,8 @@ class RobotController:
 
 
     def set_speed(speed):
+
+        #Setze Bewegungsgeschwindigkeit von UR5 über RTDE Controll (untested)
         rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
         rtde_c.sendsendSpeedSlider(speed)
 

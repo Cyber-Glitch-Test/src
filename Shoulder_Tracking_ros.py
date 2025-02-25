@@ -76,25 +76,62 @@ while not rospy.is_shutdown():
     if results.pose_landmarks:
         mpDraw.draw_landmarks(color_image, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
 
-        # Get coordinates of the right shoulder (index 12) (hand: 16)
+        # Get coordinates of the right shoulder (index 12)
         right_shoulder_landmark = results.pose_landmarks.landmark[12]
-        xr = int(right_shoulder_landmark.x * color_image.shape[1])
-        yr = int(right_shoulder_landmark.y * color_image.shape[0])
-        zr = right_shoulder_landmark.z
+        x_right_shoulder = int(right_shoulder_landmark.x * color_image.shape[1])
+        y_right_shoulder = int(right_shoulder_landmark.y * color_image.shape[0])
+
+        # Get coordinates of the right elbow (index 14)
+        right_elbow_landmark = results.pose_landmarks.landmark[14]
+        x_right_elbow = int(right_elbow_landmark.x * color_image.shape[1])
+        y_right_elbow = int(right_elbow_landmark.y * color_image.shape[0])
+
+        # Get coordinates of the hand (index 16)
+        right_hand_landmark = results.pose_landmarks.landmark[16]
+        x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
+        y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
 
         # Calculate the 3D position of the right shoulder
-        right_shoulder_distance = depth_image[yr, xr] * depth_scale
-        z = right_shoulder_distance
-        x_world = (xr - cx) * z / fx
-        y_world = (yr - cy) * z / fy
+        right_shoulder_distance = depth_image[y_right_shoulder , x_right_shoulder ] * depth_scale
+        z_right_shoulder  = right_shoulder_distance
+        x_world_right_shoulder  = (x_right_shoulder  - cx) * z_right_shoulder  / fx
+        y_world_right_shoulder  = (y_right_shoulder  - cy) * z_right_shoulder  / fy
+
+        # Calculate the 3D position of the right elbow
+        right_elbow_distance = depth_image[y_right_elbow , x_right_elbow ] * depth_scale
+        z_right_elbow  = right_elbow_distance
+        x_world_right_elbow  = (x_right_elbow  - cx) * z_right_elbow  / fx
+        y_world_right_elbow  = (y_right_elbow  - cy) * z_right_elbow  / fy
+
+        # Calculate the 3D position of the right hand
+        right_hand_distance = depth_image[y_right_hand , x_right_hand ] * depth_scale
+        z_right_hand  = right_hand_distance
+        x_world_right_hand  = (x_right_hand  - cx) * z_right_hand  / fx
+        y_world_right_hand  = (y_right_hand  - cy) * z_right_hand  / fy
 
         # Create a PointStamped message for the right shoulder in camera frame
         right_shoulder_point = PointStamped()
         right_shoulder_point.header.frame_id = "camera_link"
         right_shoulder_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
-        right_shoulder_point.point.x = x_world
-        right_shoulder_point.point.y = y_world
-        right_shoulder_point.point.z = z
+        right_shoulder_point.point.x = x_world_right_shoulder 
+        right_shoulder_point.point.y = y_world_right_shoulder
+        right_shoulder_point.point.z = z_right_shoulder
+
+        # Create a PointStamped message for the right elbow in camera frame
+        right_elbow_point = PointStamped()
+        right_elbow_point.header.frame_id = "camera_link"
+        right_elbow_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
+        right_elbow_point.point.x = x_world_right_elbow 
+        right_elbow_point.point.y = y_world_right_elbow
+        right_elbow_point.point.z = z_right_elbow 
+
+        # Create a PointStamped message for the right hand in camera frame
+        right_hand_point = PointStamped()
+        right_hand_point.header.frame_id = "camera_link"
+        right_hand_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
+        right_hand_point.point.x = x_world_right_hand 
+        right_hand_point.point.y = y_world_right_hand
+        right_hand_point.point.z = z_right_hand 
 
         # Veröffentliche den Frame "camera_link" im TF-Baum
         broadcaster.sendTransform(
@@ -114,13 +151,37 @@ while not rospy.is_shutdown():
             # Publish the transformed point
             broadcaster.sendTransform(
                 (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
-                (0.0, 0.0, 0.0, 1.0),  # Quaternion (no rotation)
+                (0.0, 0.0, 0.0, 1.0),  # Quaternion (keine Rotation)
                 rospy.Time.now(),
                 "right_shoulder",
                 "world"
             )
 
-            print(f"Transformed Point: ({transformed_point.point.x}, {transformed_point.point.y}, {transformed_point.point.z})")
+            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            listener.waitForTransform("world", "camera_link", right_elbow_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("world", right_elbow_point)
+
+            # Publish the transformed point
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0),  # Quaternion (keine Rotation)
+                rospy.Time.now(),
+                "right_elbow",
+                "world"
+            )
+
+            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            listener.waitForTransform("world", "camera_link", right_hand_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("world", right_hand_point)
+
+            # Publish the transformed point
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0),  # Quaternion (keine Rotation)
+                rospy.Time.now(),
+                "right_hand",
+                "world"
+            )
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"Error transforming point: {e}")

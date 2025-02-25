@@ -5,24 +5,24 @@ import csv
 import rospy
 import moveit_commander
 import sys
+import smach
+import smach_ros
+import rtde_control
 from geometry_msgs.msg import Pose
 from std_msgs.msg import String
 from moveit_msgs.msg import Grasp, PlaceLocation
 from moveit_commander.move_group import MoveGroupCommander
-import smach
-import smach_ros
-import rospy
-import rtde_control
+from moveit_commander import PlanningSceneInterface
+from geometry_msgs.msg import PoseStamped
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
-import sys
 
 
 
-#======Posen für Roboterarm======
-rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574,0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
-rb_arm_over_m1          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m1            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+#======Posen für Roboterarm====== 
+rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574, 0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
+rb_arm_over_m1          = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m1            = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
 rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
 rb_arm_over_m2          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
 rb_arm_on_m2            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
@@ -73,7 +73,7 @@ class GripperController:
             self.command.rFR = 150
         elif action_type == 'deactivate':
             self.command.rACT = 0   # Deaktiviere den Gripper
-        
+        rospy.sleep(2)
         # Sende den Befehl an den Gripper
         rospy.loginfo(f"Sende Befehl: {action_type}")
         self.pub.publish(self.command)
@@ -123,6 +123,8 @@ def reset_robot(move_group):
     rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
 
+
+
 def moveit_control_node():
 
     # Initialisiere MoveIt und ROS
@@ -130,7 +132,7 @@ def moveit_control_node():
     rospy.init_node('ur5_moveit_control', anonymous=True)
 
     # Erstelle den MoveGroupCommander für den UR5 Roboter
-    group_name = "manipulator" 
+    group_name = "manipulator"
     move_group = MoveGroupCommander(group_name)
 
     # Setze die maximale Geschwindigkeit und Beschleunigung
@@ -140,11 +142,22 @@ def moveit_control_node():
     # Referenzrahmen
     planning_frame = move_group.get_planning_frame()
     rospy.loginfo("Planungsrahmen: %s", planning_frame)
+
+    # **Hier: Planungsschnittstelle (Scene) erstellen**
+    scene = PlanningSceneInterface()
+    rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
+
+    # Box-Position definieren
     p = PoseStamped()
-    p.pose.position.x = 0.
-    p.pose.position.y = 0.
-    p.pose.position.z = 0.
-    planning_frame.add_box("Tisch", p, (0.5, 1.5, 0.6))
+    p.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+    p.pose.position.x = 0.0
+    p.pose.position.y = 0.0
+    p.pose.position.z = -0.09  # Etwas unter dem Boden
+
+    # Box zur Szene hinzufügen
+    scene.add_box("Tisch", p, size=(3, 2, 0.05))
+
+    rospy.loginfo("Box wurde hinzugefügt.")
 
     # Zielrahmen für den Endeffektor
     eef_link = move_group.get_end_effector_link()
@@ -152,6 +165,7 @@ def moveit_control_node():
 
     # Shutdown von MoveIt und ROS-Verbindungen
     # moveit_commander.roscpp_shutdown()
+
 
 
 def point_inside(point):   
@@ -165,8 +179,13 @@ def point_inside(point):
 
 
 def set_speed(speed):
-    rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
-    rtde_c.sendsendSpeedSlider(speed)
+    try:
+        rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
+        rtde_c.sendsendSpeedSlider(speed) 
+    except Exception as e:
+        rospy.logwarn("RTDE-Verbindung fehlgeschlagen.Fehler: %s", e)
+
+
 
 ################################ Initialisiere Smachstates ################################
 
@@ -188,25 +207,26 @@ class M1PickUp(smach.State):
 
         rospy.loginfo("bereit für M1 aufnehmen")
         self.gripper_controller.send_gripper_command('activate')
-        rospy.sleep(2)
         self.gripper_controller.send_gripper_command('close')
-        rospy.sleep(2)
         self.gripper_controller.send_gripper_command('open')
-        rospy.sleep(2)
         
         rospy.loginfo("Zweite Bewegung...")
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
 
+        
         rospy.loginfo("Dritte Bewegung...")
 
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
             return 'succeeded'  # Oder 'aborted'
-
         self.gripper_controller.send_gripper_command('close')
-        rospy.sleep(2)
+        
         
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+            return 'succeeded'  # Oder 'aborted'
+        return 'succeeded'
+    
+        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum_static),10):
             return 'succeeded'  # Oder 'aborted'
         return 'succeeded'
 

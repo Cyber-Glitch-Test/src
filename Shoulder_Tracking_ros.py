@@ -13,8 +13,8 @@ from tf.transformations import quaternion_from_euler
 # Set up your ROS node and TransformBroadcaster
 rospy.init_node('Stereo_Cam')
 broadcaster = tf.TransformBroadcaster()
-translation = (0.09, -0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem
-rotation = quaternion_from_euler(-math.pi/2-((15*math.pi)/180), 0, -math.pi/2)  # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
+translation = (0.09, -0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
+rotation = quaternion_from_euler(-math.pi/2-((15*math.pi)/180), 0, math.pi)  # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 
 # Initialisierte Realsense Kamera
 realsense_ctx = rs.context()
@@ -76,7 +76,7 @@ while not rospy.is_shutdown():
     if results.pose_landmarks:
         mpDraw.draw_landmarks(color_image, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
 
-        # Get coordinates of the right shoulder (index 12)
+        # Get coordinates of the right shoulder (index 12) (hand: 16)
         right_shoulder_landmark = results.pose_landmarks.landmark[12]
         xr = int(right_shoulder_landmark.x * color_image.shape[1])
         yr = int(right_shoulder_landmark.y * color_image.shape[0])

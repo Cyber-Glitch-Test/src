@@ -81,15 +81,27 @@ while not rospy.is_shutdown():
         x_right_shoulder = int(right_shoulder_landmark.x * color_image.shape[1])
         y_right_shoulder = int(right_shoulder_landmark.y * color_image.shape[0])
 
+        # Ensure valid coordinates (clamp within image bounds)
+        x_right_shoulder = max(0, min(x_right_shoulder, color_image.shape[1] - 1))
+        y_right_shoulder = max(0, min(y_right_shoulder, color_image.shape[0] - 1))
+
         # Get coordinates of the right elbow (index 14)
         right_elbow_landmark = results.pose_landmarks.landmark[14]
         x_right_elbow = int(right_elbow_landmark.x * color_image.shape[1])
         y_right_elbow = int(right_elbow_landmark.y * color_image.shape[0])
 
-        # Get coordinates of the hand (index 16)
+        # Ensure valid coordinates (clamp within image bounds)
+        x_right_elbow = max(0, min(x_right_elbow, color_image.shape[1] - 1))
+        y_right_elbow = max(0, min(y_right_elbow, color_image.shape[0] - 1))
+
+        # Get coordinates of the right hand (index 16)
         right_hand_landmark = results.pose_landmarks.landmark[16]
         x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
         y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
+
+        # Ensure valid coordinates (clamp within image bounds)
+        x_right_hand = max(0, min(x_right_hand, color_image.shape[1] - 1))
+        y_right_hand = max(0, min(y_right_hand, color_image.shape[0] - 1))
 
         # Calculate the 3D position of the right shoulder
         right_shoulder_distance = depth_image[y_right_shoulder , x_right_shoulder ] * depth_scale

@@ -36,8 +36,8 @@ rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0
 
 height_hum_shoulder = 1.8
 Hum_det = True
-savety_koord_1 = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335])
-savety_koord_2 = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335])
+savety_koord_1 = np.array([0.2, 0.68, 0.8])
+savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 
 #======Gripper Control======
 
@@ -97,7 +97,7 @@ def Convert_to_Pose(koords):
     
 
 def move_to_target(move_group, target_pose,speed):
-    set_speed(speed)
+    #set_speed(speed)
     move_group.set_pose_target(target_pose)
     rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
@@ -167,16 +167,27 @@ def moveit_control_node():
     # moveit_commander.roscpp_shutdown()
 #Berechne ergonomische übergabe Position
 def calc_handover_position():
-    hand_over_position = Pose()
-    hum_params=get_Hum_mertics.camera_listener
-    arm_length=get_Hum_mertics.calc_arm_lenght
-    hand_over_position_x = hum_params["shoulder"][0]
-    hand_over_position_y = hum_params["shoulder"][1]-arm_length["fore_arm_lenght"]
-    hand_over_position_z = hum_params["shoulder"][2]-arm_length["upper_arm_lenght"]
-    hand_over_position = Convert_to_Pose(hand_over_position_x,hand_over_position_y,hand_over_position_z,0,0,0,0)
-    return hand_over_position
+    try:
+        hand_over_position = Pose()
+        hum_params=get_Hum_mertics.camera_listener()
+        arm_length=get_Hum_mertics.calc_arm_lenght()
+        print("hier")
+        print(arm_length)
+        print(arm_length["fore_arm_lenght"])
+        print((hum_params["shoulder"][1]-arm_length["fore_arm_lenght"]))
+        hand_over_position_x = hum_params["shoulder"][0]
+        hand_over_position_y = (hum_params["shoulder"][1]+arm_length["fore_arm_lenght"])
+        hand_over_position_z = (hum_params["shoulder"][2]-arm_length["uper_arm_lenght"])
+        hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
 
-def point_inside(point):   
+
+        return hand_over_position
+    except Exception as e:
+        rospy.logwarn("HD fehlgeschlagen.Fehler: %s", e)
+        return rb_arm_on_hum_static
+
+def point_inside(pose):
+    point=[pose.position.x,pose.position.y,pose.position.z] 
     xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
     yield xmin < point[0] < xmax
     ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
@@ -193,7 +204,7 @@ def set_speed(speed):
 
 #======Get Hum Data======
 class get_Hum_mertics:
-    def camera_listener(self):
+    def camera_listener():
         try:
             time = rospy.Time(0) 
             listener = tf.TransformListener()
@@ -218,19 +229,21 @@ class get_Hum_mertics:
             # rospy.loginfo(f"Shoulder: {params['shoulder']}")
             # rospy.loginfo(f"Elbow: {params['elbow']}")
             # rospy.loginfo(f"Hand: {params['hand']}")
-        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-            rospy.logwarn(f"TF Error: {e}")
             print(params)
             return params
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logwarn(f"TF Error: {e}")
 
-    def calc_arm_lenght(self):
+
+
+    def calc_arm_lenght():
         hum_params=get_Hum_mertics.camera_listener()
         arm_lenght={
-                "uper_arm_lenght": get_Hum_mertics.calc_euclidean_distance(hum_params["shoulder"],hum_params["elbow"]),
-                "fore_arm_lenght": get_Hum_mertics.calc_euclidean_distance(hum_params["elbow"],hum_params["hand"]),
+                "uper_arm_lenght": (get_Hum_mertics.calc_euclidean_distance([hum_params["shoulder"][0],hum_params["shoulder"][1],hum_params["shoulder"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
+                "fore_arm_lenght": (get_Hum_mertics.calc_euclidean_distance([hum_params["hand"][0],hum_params["hand"][1],hum_params["hand"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
                 }
         print(arm_lenght)
-        return
+        return arm_lenght
     
     def calc_euclidean_distance(point1, point2):
         distance = 0.0
@@ -251,35 +264,38 @@ class M1PickUp(smach.State):
         self.gripper_controller = GripperController()
 
     def execute(self, userdata):
-        print(calc_handover_position)
+        return 'succeeded_with_HD'
         rospy.loginfo('Executing state: M1PickUp')
         
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_home),5):
-            return 'succeeded'  # Oder 'aborted'
+            return 'succeeded'
 
         rospy.loginfo("bereit für M1 aufnehmen")
         self.gripper_controller.send_gripper_command('activate')
         self.gripper_controller.send_gripper_command('close')
         self.gripper_controller.send_gripper_command('open')
-        print(calc_handover_position())
+        
         rospy.loginfo("Zweite Bewegung...")
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
-            return 'succeeded'  # Oder 'aborted'
+            return 'succeeded'
 
-        print(calc_handover_position())
         rospy.loginfo("Dritte Bewegung...")
 
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
-            return 'succeeded'  # Oder 'aborted'
+            return 'succeeded'
         self.gripper_controller.send_gripper_command('close')
-        print(calc_handover_position())
+        
         
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
-            return 'succeeded'  # Oder 'aborted'
+            return 'succeeded'
     
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum_static),10):
-            return 'succeeded'  # Oder 'aborted'
-        return 'succeeded'
+            return 'succeeded'
+        
+        if point_inside(calc_handover_position()):
+            return 'succeeded_with_HD'
+        else :
+            return 'succeeded'
 
 class M1Hold(smach.State):
     def __init__(self):
@@ -293,10 +309,17 @@ class M1Hold(smach.State):
 class M1HoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
-
+        self.group_name = group_name
+        self.robot = moveit_commander.RobotCommander()  # Objekt für den Roboter
+        self.scene = moveit_commander.PlanningSceneInterface()  # Szene
+        self.group = MoveGroupCommander(self.group_name)
+        self.gripper_controller = GripperController()
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1Hold')
         ####
+        if not move_to_target(self.group, calc_handover_position(),5):
+            return 'succeeded'  
+    
         return 'succeeded'
 
 class M1Positioning(smach.State):
@@ -443,14 +466,6 @@ class CopperFixing1To6(smach.State):
         ####
         return 'succeeded'
 
-class PCB3Fixing(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: PCB3Fixing')
-        ####
-        return 'succeeded'
 
 class BatteryPositioning(smach.State):
     def __init__(self):
@@ -479,7 +494,6 @@ if __name__ == "__main__":
         moveit_control_node()
     except rospy.ROSInterruptException:
         pass
-    
     
 
     sm = smach.StateMachine(outcomes=['finished'])
@@ -532,15 +546,13 @@ if __name__ == "__main__":
         smach.StateMachine.add('PCB1PickUpAndPositioning', PCB1PickUpAndPositioning(),
                                transitions={'succeeded':'PCB2PickUpAndPositioning'})
         smach.StateMachine.add('PCB2PickUpAndPositioning', PCB2PickUpAndPositioning(),
-                               transitions={'succeeded':'PCB3Fixing'})
-        smach.StateMachine.add('PCB3Fixing', PCB3Fixing(),
                                transitions={'succeeded':'BatteryPositioning'})
         smach.StateMachine.add('BatteryPositioning', BatteryPositioning(),
                                transitions={'succeeded':'finished'})
 
     # Iniizialisiere den introspection server
 try:
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
+    sis = sm.IntrospectionServer('server_name', sm, '/SM_ROOT')
     sis.start()
 except AttributeError as e:
     rospy.logwarn(f"IntrospectionServer not found. Falling back to manual debugging. Error: {e}")

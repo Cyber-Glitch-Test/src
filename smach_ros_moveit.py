@@ -8,7 +8,10 @@ import sys
 import smach
 import smach_ros
 import rtde_control
+import tf
+import math
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PointStamped
 from std_msgs.msg import String
 from moveit_msgs.msg import Grasp, PlaceLocation
 from moveit_commander.move_group import MoveGroupCommander
@@ -122,9 +125,6 @@ def reset_robot(move_group):
     move_group.go(wait=True)
     rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
-
-
-
 def moveit_control_node():
 
     # Initialisiere MoveIt und ROS
@@ -165,8 +165,16 @@ def moveit_control_node():
 
     # Shutdown von MoveIt und ROS-Verbindungen
     # moveit_commander.roscpp_shutdown()
-
-
+#Berechne ergonomische übergabe Position
+def calc_handover_position():
+    hand_over_position = Pose()
+    hum_params=get_Hum_mertics.camera_listener
+    arm_length=get_Hum_mertics.calc_arm_lenght
+    hand_over_position_x = hum_params["shoulder"][0]
+    hand_over_position_y = hum_params["shoulder"][1]-arm_length["fore_arm_lenght"]
+    hand_over_position_z = hum_params["shoulder"][2]-arm_length["upper_arm_lenght"]
+    hand_over_position = Convert_to_Pose(hand_over_position_x,hand_over_position_y,hand_over_position_z,0,0,0,0)
+    return hand_over_position
 
 def point_inside(point):   
     xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
@@ -175,8 +183,6 @@ def point_inside(point):
     yield ymin < point[1] < ymax
     zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
     yield zmin < point[2] < zmax
-    rect = (savety_koord_1, savety_koord_2)
-
 
 def set_speed(speed):
     try:
@@ -185,6 +191,52 @@ def set_speed(speed):
     except Exception as e:
         rospy.logwarn("RTDE-Verbindung fehlgeschlagen.Fehler: %s", e)
 
+#======Get Hum Data======
+class get_Hum_mertics:
+    def camera_listener(self):
+        try:
+            time = rospy.Time(0) 
+            listener = tf.TransformListener()
+            time = rospy.Time(0)  # Nutze die letzte verfügbare Zeit
+            listener.waitForTransform("world", "right_shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("world", "right_elbow", time, rospy.Duration(1.0))
+            listener.waitForTransform("world", "right_hand", time, rospy.Duration(1.0))
+
+            # Transformationen abrufen
+            shoulder_trans, _ = listener.lookupTransform("world", "right_shoulder", time)
+            elbow_trans, _ = listener.lookupTransform("world", "right_elbow", time)
+            hand_trans, _ = listener.lookupTransform("world", "right_hand", time)
+
+            # Daten speichern
+            params = {
+                "shoulder": [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]],
+                "elbow": [elbow_trans[0], elbow_trans[1],  elbow_trans[2]],
+                "hand": [hand_trans[0],  hand_trans[1],  hand_trans[2]],
+                }
+
+            # Ausgabe zur Überprüfung
+            # rospy.loginfo(f"Shoulder: {params['shoulder']}")
+            # rospy.loginfo(f"Elbow: {params['elbow']}")
+            # rospy.loginfo(f"Hand: {params['hand']}")
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logwarn(f"TF Error: {e}")
+            print(params)
+            return params
+
+    def calc_arm_lenght(self):
+        hum_params=get_Hum_mertics.camera_listener()
+        arm_lenght={
+                "uper_arm_lenght": get_Hum_mertics.calc_euclidean_distance(hum_params["shoulder"],hum_params["elbow"]),
+                "fore_arm_lenght": get_Hum_mertics.calc_euclidean_distance(hum_params["elbow"],hum_params["hand"]),
+                }
+        print(arm_lenght)
+        return
+    
+    def calc_euclidean_distance(point1, point2):
+        distance = 0.0
+        for i in range(len(point1)):
+            distance += (point2[i] - point1[i]) ** 2
+        return math.sqrt(distance)
 
 
 ################################ Initialisiere Smachstates ################################
@@ -199,7 +251,7 @@ class M1PickUp(smach.State):
         self.gripper_controller = GripperController()
 
     def execute(self, userdata):
-
+        print(calc_handover_position)
         rospy.loginfo('Executing state: M1PickUp')
         
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_home),5):
@@ -209,22 +261,21 @@ class M1PickUp(smach.State):
         self.gripper_controller.send_gripper_command('activate')
         self.gripper_controller.send_gripper_command('close')
         self.gripper_controller.send_gripper_command('open')
-        
+        print(calc_handover_position())
         rospy.loginfo("Zweite Bewegung...")
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
 
-        
+        print(calc_handover_position())
         rospy.loginfo("Dritte Bewegung...")
 
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
             return 'succeeded'  # Oder 'aborted'
         self.gripper_controller.send_gripper_command('close')
-        
+        print(calc_handover_position())
         
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
             return 'succeeded'  # Oder 'aborted'
-        return 'succeeded'
     
         if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum_static),10):
             return 'succeeded'  # Oder 'aborted'
@@ -420,10 +471,6 @@ class BatteryFixing(smach.State):
         return 'succeeded'
 
 
-def tracking_listener():
-
-    topic = rospy.get_param('~shoulder', 'chatter')
-    rospy.Subscriber(topic, node_example_data, callback)
 
 
 if __name__ == "__main__":
@@ -443,9 +490,6 @@ if __name__ == "__main__":
     rospy.init_node('ur5_moveit_control', anonymous=True)
 
     # Starte die Robotiq Gripper Control Node
-
-
-
     group_name = "manipulator" 
     with sm:
         # Smachstates

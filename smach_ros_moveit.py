@@ -35,6 +35,8 @@ rb_arm_over_m4          = np.array([-0.29123786593673395, 0.08147063802929881, 0
 rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
 
 height_hum_shoulder = 1.8
+forearmlenghdin = 0.3335 #aus DIN 33402-2 gemittel aus Mann und Frau über alle altersklassen
+upperarmlenghtdin = 0.342 #aus DIN 33402-2 gemittel aus Mann und Frau über alle altersklassen
 Hum_det = True
 savety_koord_1 = np.array([0.2, 0.68, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
@@ -167,21 +169,43 @@ def moveit_control_node():
     # moveit_commander.roscpp_shutdown()
 #Berechne ergonomische übergabe Position
 def calc_handover_position():
+
     try:
         hand_over_position = Pose()
-        hum_params=get_Hum_mertics.camera_listener()
-        arm_length=get_Hum_mertics.calc_arm_lenght()
-        print("hier")
-        print(arm_length)
-        print(arm_length["fore_arm_lenght"])
-        print((hum_params["shoulder"][1]-arm_length["fore_arm_lenght"]))
-        hand_over_position_x = hum_params["shoulder"][0]
-        hand_over_position_y = (hum_params["shoulder"][1]+arm_length["fore_arm_lenght"])
-        hand_over_position_z = (hum_params["shoulder"][2]-arm_length["uper_arm_lenght"])
-        hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+        # hum_params=get_Hum_mertics.camera_listener()
+        # arm_length=get_Hum_mertics.calc_arm_lenght()
 
+        # hand_over_position_x = hum_params["shoulder"][0]
+        # hand_over_position_y = (hum_params["shoulder"][1]+arm_length["fore_arm_lenght"])
+        # hand_over_position_z = (hum_params["shoulder"][2]-arm_length["uper_arm_lenght"])
+        # hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+        
+        hm = get_Hum_mertics()
 
+        #berechne die ergonomischste Übergabeposition
+        if all(x == 0 for x in hm.shoulderkoords)and all(x == 0 for x in hm.elbowkoords)and all(x == 0 for x in hm.handkoords):
+            rospy.loginfo("Schulter, Elebogen und Hand erkannt")
+            hand_over_position_x = hm.shoulderkoords[0]                     #x Position ist gleich schuler
+            hand_over_position_y = (hm.shoulderkoords[1]+hm.forearmlenght)  #y Position ist gleich schuler + unterarmänge
+            hand_over_position_z = (hm.shoulderkoords[2]+hm.uperarmlenght)  #z Position ist gleich schuler + oberarmänge
+            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+        elif all(x == 0 for x in hm.shoulderkoords)and all(x == 0 for x in hm.elbowkoords):
+            rospy.loginfo("Schulter, Elebogen erkannt")
+            hand_over_position_x = hm.shoulderkoords[0]                     #x Position ist gleich schuler
+            hand_over_position_y = (hm.shoulderkoords[1]+forearmlenghdin)   #y Position ist gleich schuler + DIN unterarmänge
+            hand_over_position_z = (hm.shoulderkoords[2]+hm.uperarmlenght)  #z Position ist gleich schuler + oberarmänge
+            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+        elif all(x == 0 for x in hm.shoulderkoords):
+            rospy.loginfo("Schulter erkannt")
+            hand_over_position_x = hm.shoulderkoords[0]                      #x Position ist gleich schuler
+            hand_over_position_y = (hm.shoulderkoords[1]+forearmlenghdin)    #y Position ist gleich schuler + DIN unterarmänge
+            hand_over_position_z = (hm.shoulderkoords[2]+upperarmlenghtdin)  #z Position ist gleich schuler + DIN oberarmänge
+            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+        else:
+            rospy.loginfo("nichts erkannt")
+            hand_over_position = Convert_to_Pose(rb_arm_on_hum_static)
         return hand_over_position
+    
     except Exception as e:
         rospy.logwarn("HD fehlgeschlagen.Fehler: %s", e)
         return rb_arm_on_hum_static
@@ -204,8 +228,17 @@ def set_speed(speed):
 
 #======Get Hum Data======
 class get_Hum_mertics:
-    def camera_listener():
+    def __init__(self):
+        self.uperarmlenght
+        self.forearmlenght
+        self.shoulderkoords
+        self.elbowkoords
+        self.handkoords
+        self.calc_arm_lenght()
+    def camera_listener(self):
         try:
+
+            #init Ros listener und rufe Koords von Armgelenken ab
             time = rospy.Time(0) 
             listener = tf.TransformListener()
             time = rospy.Time(0)  # Nutze die letzte verfügbare Zeit
@@ -219,31 +252,38 @@ class get_Hum_mertics:
             hand_trans, _ = listener.lookupTransform("world", "right_hand", time)
 
             # Daten speichern
-            params = {
-                "shoulder": [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]],
-                "elbow": [elbow_trans[0], elbow_trans[1],  elbow_trans[2]],
-                "hand": [hand_trans[0],  hand_trans[1],  hand_trans[2]],
-                }
+            # params = {
+            #     "shoulder": [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]],
+            #     "elbow": [elbow_trans[0], elbow_trans[1],  elbow_trans[2]],
+            #     "hand": [hand_trans[0],  hand_trans[1],  hand_trans[2]],
+            #     }
 
+            self.shoulderkoords = [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
+            self.elbowkoords = [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
+            self.handkoords = [hand_trans[0], hand_trans[1], hand_trans[2]]
+            
             # Ausgabe zur Überprüfung
             # rospy.loginfo(f"Shoulder: {params['shoulder']}")
             # rospy.loginfo(f"Elbow: {params['elbow']}")
             # rospy.loginfo(f"Hand: {params['hand']}")
-            print(params)
-            return params
+            
+            #return params
+            return
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"TF Error: {e}")
 
-
-
-    def calc_arm_lenght():
-        hum_params=get_Hum_mertics.camera_listener()
-        arm_lenght={
-                "uper_arm_lenght": (get_Hum_mertics.calc_euclidean_distance([hum_params["shoulder"][0],hum_params["shoulder"][1],hum_params["shoulder"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
-                "fore_arm_lenght": (get_Hum_mertics.calc_euclidean_distance([hum_params["hand"][0],hum_params["hand"][1],hum_params["hand"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
-                }
-        print(arm_lenght)
-        return arm_lenght
+    def calc_arm_lenght(self):
+        # hum_params=get_Hum_mertics.camera_listener()
+        # arm_lenght={
+        #         "uper_arm_lenght": (self.calc_euclidean_distance([hum_params["shoulder"][0],hum_params["shoulder"][1],hum_params["shoulder"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
+        #         "fore_arm_lenght": (self.calc_euclidean_distance([hum_params["hand"][0],hum_params["hand"][1],hum_params["hand"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
+        #         }
+        # print(arm_lenght)
+        self.camera_listener
+        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,self.elbowkoords)
+        self.forearmlenght = self.calc_euclidean_distance(self.handkoords,self.elbowkoords)
+        # return arm_lenght
+        return
     
     def calc_euclidean_distance(point1, point2):
         distance = 0.0
@@ -552,7 +592,7 @@ if __name__ == "__main__":
 
     # Iniizialisiere den introspection server
 try:
-    sis = sm.IntrospectionServer('server_name', sm, '/SM_ROOT')
+    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
     sis.start()
 except AttributeError as e:
     rospy.logwarn(f"IntrospectionServer not found. Falling back to manual debugging. Error: {e}")

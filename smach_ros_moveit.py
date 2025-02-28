@@ -43,310 +43,206 @@ savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 
 #======Gripper Control======
 
+class RobotControl:
+    def __init__(self, group_name):
+        self.group_name = group_name
+        self.move_group = MoveGroupCommander(self.group_name)
+        self.gripper_controller = GripperController()
+        self.scene = PlanningSceneInterface()
+        self.robot = moveit_commander.RobotCommander()
+
+        # Setze die maximale Geschwindigkeit und Beschleunigung
+        self.move_group.set_max_velocity_scaling_factor(0.1)
+        self.move_group.set_max_acceleration_scaling_factor(0.1)
+
+    def convert_to_pose(self, koords):
+        target_pose = Pose()
+        target_pose.position.x = koords[0]
+        target_pose.position.y = koords[1]
+        target_pose.position.z = koords[2]
+        target_pose.orientation.x = koords[3]
+        target_pose.orientation.y = koords[4]
+        target_pose.orientation.z = koords[5]
+        target_pose.orientation.w = koords[6]
+        return target_pose
+
+    def move_to_target(self, target_pose, speed):
+        self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
+        self.move_group.set_pose_target(target_pose)
+        rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
+
+        success = self.move_group.go(wait=True)
+        if success:
+            rospy.loginfo("Bewegung erfolgreich!")
+            return True
+        else:
+            rospy.logwarn("Bewegung fehlgeschlagen!")
+            self.move_group.stop()
+            self.move_group.clear_pose_targets()
+            return False
+
+    def move_to_joint_goal(self, joint_goal, speed):
+        self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
+        success = self.move_group.go(joint_goal, wait=True)
+        if success:
+            rospy.loginfo("Bewegung erfolgreich!")
+            return True
+        else:
+            rospy.logwarn("Bewegung fehlgeschlagen!")
+            self.move_group.stop()
+            self.move_group.clear_pose_targets()
+            return False
+
+    def stop_robot(self):
+        self.move_group.stop()
+        rospy.loginfo("Roboter gestoppt!")
+
+    def reset_robot(self):
+        self.move_group.set_named_target("home")
+        self.move_group.go(wait=True)
+        rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
+
+    def calc_handover_position(self):
+        try:
+            hand_over_position = Pose()
+            hm = get_Hum_mertics()
+
+            if all(x == 0 for x in hm.shoulderkoords) and all(x == 0 for x in hm.elbowkoords) and all(x == 0 for x in hm.handkoords):
+                rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
+                hand_over_position_x = hm.shoulderkoords[0]
+                hand_over_position_y = hm.shoulderkoords[1] + hm.forearmlenght
+                hand_over_position_z = hm.shoulderkoords[2] + hm.uperarmlenght
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+            elif all(x == 0 for x in hm.shoulderkoords) and all(x == 0 for x in hm.elbowkoords):
+                rospy.loginfo("Schulter, Ellbogen erkannt")
+                hand_over_position_x = hm.shoulderkoords[0]
+                hand_over_position_y = hm.shoulderkoords[1] + forearmlenghdin
+                hand_over_position_z = hm.shoulderkoords[2] + hm.uperarmlenght
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+            elif all(x == 0 for x in hm.shoulderkoords):
+                rospy.loginfo("Schulter erkannt")
+                hand_over_position_x = hm.shoulderkoords[0]
+                hand_over_position_y = hm.shoulderkoords[1] + forearmlenghdin
+                hand_over_position_z = hm.shoulderkoords[2] + upperarmlenghtdin
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+            else:
+                rospy.loginfo("Nichts erkannt")
+                hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+            return hand_over_position
+
+        except Exception as e:
+            rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
+            return self.convert_to_pose(rb_arm_on_hum_static)
+
+    def point_inside(self, pose):
+        point = [pose.position.x, pose.position.y, pose.position.z]
+        xmin, xmax = savety_koord_1[0] - 1, savety_koord_2[0] + 1
+        ymin, ymax = savety_koord_1[1] - 1, savety_koord_2[1] + 1
+        zmin, zmax = savety_koord_1[2] - 1, savety_koord_2[2] + 1
+        return xmin < point[0] < xmax and ymin < point[1] < ymax and zmin < point[2] < zmax
+
+#======Gripper Control======
+
 class GripperController:
     def __init__(self):
-
-        
-        # ROS Publisher für das Senden von Befehlen an den Gripper
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        
-        # ROS Subscriber für den Empfang von Statusinformationen des Grippers
         rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
-        
-        # Initialisierung des ROS-Knotens
-        #rospy.init_node('gripper_control_node')
-        
-        # Gripper-Status und zuletzt gesendeter Befehl
         self.gripper_status = inputMsg.Robotiq2FGripper_robot_input()
         self.command = outputMsg.Robotiq2FGripper_robot_output()
 
     def status_callback(self, msg):
-        """Callback-Funktion, um den Status des Grippers zu empfangen."""
         self.gripper_status = msg
-        #rospy.loginfo("Aktueller Gripper-Status: %s", msg)
 
     def send_gripper_command(self, action_type):
-        """Sende einen Befehl an den Gripper (öffnen, schließen, etc.)."""
         if action_type == 'open':
-            self.command.rPR = 0  # Öffne den Gripper
+            self.command.rPR = 0
         elif action_type == 'close':
-            self.command.rPR = 255    # Schließe den Gripper
+            self.command.rPR = 255
         elif action_type == 'activate':
             self.command.rACT = 1
             self.command.rGTO = 1
             self.command.rSP = 255
             self.command.rFR = 150
         elif action_type == 'deactivate':
-            self.command.rACT = 0   # Deaktiviere den Gripper
+            self.command.rACT = 0
         rospy.sleep(2)
-        # Sende den Befehl an den Gripper
-        rospy.loginfo(f"Sende Befehl: {action_type}")
         self.pub.publish(self.command)
 
-#======Robot Control======
-
-def Convert_to_Pose(koords):
-    # Konvertiere koords in Pose
-    target_pose = Pose()
-    target_pose.position.x = koords[0]
-    target_pose.position.y = koords[1]
-    target_pose.position.z = koords[2]
-    target_pose.orientation.x = koords[3]
-    target_pose.orientation.y = koords[4]
-    target_pose.orientation.z = koords[5]
-    target_pose.orientation.w = koords[6]
-    return target_pose
-    
-
-def move_to_target(move_group, target_pose,speed):
-    #set_speed(speed)
-    move_group.set_pose_target(target_pose)
-    rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
-
-    success = move_group.go(wait=True)
-    
-    if success:
-        rospy.loginfo("Bewegung erfolgreich!")
-        return True
-    else:
-        rospy.logwarn("Bewegung fehlgeschlagen!")
-        move_group.stop()
-        move_group.clear_pose_targets()
-        return False
-
-def move_to_joint_goal(move_group, joint_goal,speed):
-    #set_speed(speed)
-    success = move_group.go(joint_goal,wait=True)
-    if success:
-        rospy.loginfo("Bewegung erfolgreich!")
-        return True
-    else:
-        rospy.logwarn("Bewegung fehlgeschlagen!")
-        move_group.stop()
-        move_group.clear_pose_targets()
-        return False
-
-def stop_robot(move_group):
-    # Stoppe die Bewegung des Roboters
-    move_group.stop()
-    rospy.loginfo("Roboter gestoppt!")
-
-
-def reset_robot(move_group):
-    # Setze den Roboter auf die Home-Position
-    move_group.set_named_target("home")
-    move_group.go(wait=True)
-    rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
-
-def moveit_control_node():
-
-    # Initialisiere MoveIt und ROS
-    moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('ur5_moveit_control', anonymous=True)
-
-    # Erstelle den MoveGroupCommander für den UR5 Roboter
-    group_name = "manipulator"
-    move_group = MoveGroupCommander(group_name)
-
-    # Setze die maximale Geschwindigkeit und Beschleunigung
-    move_group.set_max_velocity_scaling_factor(0.1)      # Geschwindigkeit 10% der maximalen Geschwindigkeit
-    move_group.set_max_acceleration_scaling_factor(0.1)  # Beschleunigung 10% der maximalen Beschleunigung
-
-    # Referenzrahmen
-    planning_frame = move_group.get_planning_frame()
-    rospy.loginfo("Planungsrahmen: %s", planning_frame)
-
-    # Hier: Planungsschnittstelle (Scene) erstellen
-    scene = PlanningSceneInterface()
-    rospy.sleep(2)
-
-    # Tischoberfläche definieren
-    p = PoseStamped()
-    p.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
-    p.pose.position.x = 0.0
-    p.pose.position.y = 0.0
-    p.pose.position.z = -0.09  # Etwas unter dem Boden
-
-    # Box zur Szene hinzufügen
-    scene.add_box("Tisch", p, size=(3, 2, 0.05))
-
-    rospy.loginfo("Box wurde hinzugefügt.")
-
-    # Zielrahmen für den Endeffektor
-    eef_link = move_group.get_end_effector_link()
-    rospy.loginfo("Endeffektor-Link: %s", eef_link)
-
-    # Shutdown von MoveIt und ROS-Verbindungen
-    # moveit_commander.roscpp_shutdown()
-
-#Berechne ergonomische übergabe Position
-def calc_handover_position():
-
-    try:
-        hand_over_position = Pose()
-        # hum_params=get_Hum_mertics.camera_listener()
-        # arm_length=get_Hum_mertics.calc_arm_lenght()
-
-        # hand_over_position_x = hum_params["shoulder"][0]
-        # hand_over_position_y = (hum_params["shoulder"][1]+arm_length["fore_arm_lenght"])
-        # hand_over_position_z = (hum_params["shoulder"][2]-arm_length["uper_arm_lenght"])
-        # hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-        
-        hm = get_Hum_mertics()
-
-        #berechne die ergonomischste Übergabeposition
-        if all(x == 0 for x in hm.shoulderkoords)and all(x == 0 for x in hm.elbowkoords)and all(x == 0 for x in hm.handkoords):
-            rospy.loginfo("Schulter, Elebogen und Hand erkannt")
-            hand_over_position_x = hm.shoulderkoords[0]                     #x Position ist gleich schuler
-            hand_over_position_y = (hm.shoulderkoords[1]+hm.forearmlenght)  #y Position ist gleich schuler + unterarmänge
-            hand_over_position_z = (hm.shoulderkoords[2]+hm.uperarmlenght)  #z Position ist gleich schuler + oberarmänge
-            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-        elif all(x == 0 for x in hm.shoulderkoords)and all(x == 0 for x in hm.elbowkoords):
-            rospy.loginfo("Schulter, Elebogen erkannt")
-            hand_over_position_x = hm.shoulderkoords[0]                     #x Position ist gleich schuler
-            hand_over_position_y = (hm.shoulderkoords[1]+forearmlenghdin)   #y Position ist gleich schuler + DIN unterarmänge
-            hand_over_position_z = (hm.shoulderkoords[2]+hm.uperarmlenght)  #z Position ist gleich schuler + oberarmänge
-            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-        elif all(x == 0 for x in hm.shoulderkoords):
-            rospy.loginfo("Schulter erkannt")
-            hand_over_position_x = hm.shoulderkoords[0]                      #x Position ist gleich schuler
-            hand_over_position_y = (hm.shoulderkoords[1]+forearmlenghdin)    #y Position ist gleich schuler + DIN unterarmänge
-            hand_over_position_z = (hm.shoulderkoords[2]+upperarmlenghtdin)  #z Position ist gleich schuler + DIN oberarmänge
-            hand_over_position = Convert_to_Pose(np.array([hand_over_position_x,hand_over_position_y,hand_over_position_z,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-        else:
-            rospy.loginfo("nichts erkannt")
-            hand_over_position = Convert_to_Pose(rb_arm_on_hum_static)
-        return hand_over_position
-    
-    except Exception as e:
-        rospy.logwarn("HD fehlgeschlagen.Fehler: %s", e)
-        return rb_arm_on_hum_static
-
-def point_inside(pose):
-    point=[pose.position.x,pose.position.y,pose.position.z] 
-    xmin, xmax = savety_koord_1[0]-1, savety_koord_2[0]+1
-    yield xmin < point[0] < xmax
-    ymin, ymax = savety_koord_1[1]-1, savety_koord_2[1]+1
-    yield ymin < point[1] < ymax
-    zmin, zmax = savety_koord_1[2]-1, savety_koord_2[2]+1
-    yield zmin < point[2] < zmax
-
-def set_speed(speed):
-    try:
-        rtde_c = rtde_control.RTDEControlInterface("192.168.0.100")
-        rtde_c.sendsendSpeedSlider(speed) 
-    except Exception as e:
-        rospy.logwarn("RTDE-Verbindung fehlgeschlagen.Fehler: %s", e)
-
 #======Get Hum Data======
+
 class get_Hum_mertics:
     def __init__(self):
-        self.uperarmlenght
-        self.forearmlenght
-        self.shoulderkoords
-        self.elbowkoords
-        self.handkoords
+        self.uperarmlenght = 0
+        self.forearmlenght = 0
+        self.shoulderkoords = [0, 0, 0]
+        self.elbowkoords = [0, 0, 0]
+        self.handkoords = [0, 0, 0]
         self.calc_arm_lenght()
+
     def camera_listener(self):
         try:
-
-            #init Ros listener und rufe Koords von Armgelenken ab
-            time = rospy.Time(0) 
+            time = rospy.Time(0)
             listener = tf.TransformListener()
-            time = rospy.Time(0)  # Nutze die letzte verfügbare Zeit
             listener.waitForTransform("world", "right_shoulder", time, rospy.Duration(1.0))
             listener.waitForTransform("world", "right_elbow", time, rospy.Duration(1.0))
             listener.waitForTransform("world", "right_hand", time, rospy.Duration(1.0))
 
-            # Transformationen abrufen
             shoulder_trans, _ = listener.lookupTransform("world", "right_shoulder", time)
             elbow_trans, _ = listener.lookupTransform("world", "right_elbow", time)
             hand_trans, _ = listener.lookupTransform("world", "right_hand", time)
 
-            # Daten speichern
-            # params = {
-            #     "shoulder": [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]],
-            #     "elbow": [elbow_trans[0], elbow_trans[1],  elbow_trans[2]],
-            #     "hand": [hand_trans[0],  hand_trans[1],  hand_trans[2]],
-            #     }
-
             self.shoulderkoords = [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
             self.elbowkoords = [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
             self.handkoords = [hand_trans[0], hand_trans[1], hand_trans[2]]
-            
-            # Ausgabe zur Überprüfung
-            # rospy.loginfo(f"Shoulder: {params['shoulder']}")
-            # rospy.loginfo(f"Elbow: {params['elbow']}")
-            # rospy.loginfo(f"Hand: {params['hand']}")
-            
-            #return params
-            return
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
-        # hum_params=get_Hum_mertics.camera_listener()
-        # arm_lenght={
-        #         "uper_arm_lenght": (self.calc_euclidean_distance([hum_params["shoulder"][0],hum_params["shoulder"][1],hum_params["shoulder"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
-        #         "fore_arm_lenght": (self.calc_euclidean_distance([hum_params["hand"][0],hum_params["hand"][1],hum_params["hand"][2]],[hum_params["elbow"][0],hum_params["elbow"][1],hum_params["elbow"][2]])),
-        #         }
-        # print(arm_lenght)
-        self.camera_listener
-        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,self.elbowkoords)
-        self.forearmlenght = self.calc_euclidean_distance(self.handkoords,self.elbowkoords)
-        # return arm_lenght
-        return
-    
-    def calc_euclidean_distance(point1, point2):
+        self.camera_listener()
+        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords, self.elbowkoords)
+        self.forearmlenght = self.calc_euclidean_distance(self.handkoords, self.elbowkoords)
+
+    def calc_euclidean_distance(self, point1, point2):
         distance = 0.0
         for i in range(len(point1)):
             distance += (point2[i] - point1[i]) ** 2
         return math.sqrt(distance)
 
 
+
 ################################ Initialisiere Smachstates ################################
 
 class M1PickUp(smach.State):
-    def __init__(self,group_name):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_with_HD'])
-        self.group_name = group_name
-        self.robot = moveit_commander.RobotCommander()  # Objekt für den Roboter
-        self.scene = moveit_commander.PlanningSceneInterface()  # Szene
-        self.group = MoveGroupCommander(self.group_name)
-        self.gripper_controller = GripperController()
+    def __init__(self, robot_control):
+        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
+        self.robot_control = robot_control
 
     def execute(self, userdata):
-        return 'succeeded_with_HD'
         rospy.loginfo('Executing state: M1PickUp')
-        
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_home),5):
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_home), 5):
             return 'succeeded'
 
-        rospy.loginfo("bereit für M1 aufnehmen")
-        self.gripper_controller.send_gripper_command('activate')
-        self.gripper_controller.send_gripper_command('close')
-        self.gripper_controller.send_gripper_command('open')
-        
-        rospy.loginfo("Zweite Bewegung...")
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+        self.robot_control.gripper_controller.send_gripper_command('activate')
+        self.robot_control.gripper_controller.send_gripper_command('close')
+        self.robot_control.gripper_controller.send_gripper_command('open')
+
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_over_m1), 10):
             return 'succeeded'
 
-        rospy.loginfo("Dritte Bewegung...")
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_m1), 5):
+            return 'succeeded'
 
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_m1),5):
+        self.robot_control.gripper_controller.send_gripper_command('close')
+
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_over_m1), 10):
             return 'succeeded'
-        self.gripper_controller.send_gripper_command('close')
-        
-        
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_over_m1),10):
+
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_hum_static), 10):
             return 'succeeded'
-    
-        if not move_to_target(self.group, Convert_to_Pose(rb_arm_on_hum_static),10):
-            return 'succeeded'
-        
-        if point_inside(calc_handover_position()):
+
+        if self.robot_control.point_inside(self.robot_control.calc_handover_position()):
             return 'succeeded_with_HD'
-        else :
+        else:
             return 'succeeded'
 
 class M1Hold(smach.State):
@@ -361,15 +257,11 @@ class M1Hold(smach.State):
 class M1HoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
-        self.group_name = group_name
-        self.robot = moveit_commander.RobotCommander()  # Objekt für den Roboter
-        self.scene = moveit_commander.PlanningSceneInterface()  # Szene
-        self.group = MoveGroupCommander(self.group_name)
-        self.gripper_controller = GripperController()
+        self.robot_control = robot_control
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1Hold')
         ####
-        if not move_to_target(self.group, calc_handover_position(),5):
+        if not self.robot_control.move_to_target(self.robot_control.calc_handover_position(),5):
             return 'succeeded'  
     
         return 'succeeded'
@@ -541,30 +433,22 @@ class BatteryFixing(smach.State):
 
 
 if __name__ == "__main__":
-    try:
-        # Starte die ROS-Node
-        moveit_control_node()
-    except rospy.ROSInterruptException:
-        pass
+
+    rospy.init_node('ur5_moveit_control', anonymous=True)
+    moveit_commander.roscpp_initialize(sys.argv)
+
+    robot_control = RobotControl("manipulator")
     
 
     sm = smach.StateMachine(outcomes=['finished'])
-
-    moveit_commander.roscpp_initialize(sys.argv)
-
-    # Starte die UR5 Control Node
-    rospy.init_node('ur5_moveit_control', anonymous=True)
-
-    # Starte die Robotiq Gripper Control Node
-    group_name = "manipulator" 
     with sm:
         # Smachstates
-        smach.StateMachine.add('M1PickUp', M1PickUp(group_name),
+        smach.StateMachine.add('M1PickUp', M1PickUp(robot_control),
                                transitions={'succeeded':'M1Hold',
                                             'succeeded_with_HD':'M1HoldHD'})
         smach.StateMachine.add('M1Hold', M1Hold(),
                                transitions={'succeeded':'M1Positioning'})
-        smach.StateMachine.add('M1HoldHD', M1HoldHD(),
+        smach.StateMachine.add('M1HoldHD', M1HoldHD(robot_control),
                                transitions={'succeeded':'M1Positioning'})
         smach.StateMachine.add('M1Positioning', M1Positioning(),
                                transitions={'succeeded':'M2PickUp'})

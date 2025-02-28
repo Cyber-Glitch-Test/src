@@ -114,6 +114,17 @@ def move_to_target(move_group, target_pose,speed):
         move_group.clear_pose_targets()
         return False
 
+def move_to_joint_goal(move_group, joint_goal,speed):
+    #set_speed(speed)
+    success = move_group.go(joint_goal,wait=True)
+    if success:
+        rospy.loginfo("Bewegung erfolgreich!")
+        return True
+    else:
+        rospy.logwarn("Bewegung fehlgeschlagen!")
+        move_group.stop()
+        move_group.clear_pose_targets()
+        return False
 
 def stop_robot(move_group):
     # Stoppe die Bewegung des Roboters
@@ -145,11 +156,11 @@ def moveit_control_node():
     planning_frame = move_group.get_planning_frame()
     rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
-    # **Hier: Planungsschnittstelle (Scene) erstellen**
+    # Hier: Planungsschnittstelle (Scene) erstellen
     scene = PlanningSceneInterface()
-    rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
+    rospy.sleep(2)
 
-    # Box-Position definieren
+    # Tischoberfläche definieren
     p = PoseStamped()
     p.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
     p.pose.position.x = 0.0
@@ -167,6 +178,7 @@ def moveit_control_node():
 
     # Shutdown von MoveIt und ROS-Verbindungen
     # moveit_commander.roscpp_shutdown()
+
 #Berechne ergonomische übergabe Position
 def calc_handover_position():
 

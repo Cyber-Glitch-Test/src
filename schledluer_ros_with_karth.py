@@ -73,22 +73,30 @@ def moveit_control_node():
 
 
     while True:
-        newuser = input('enter y/n')
+        newuser = input('enter y/n: ')
         if newuser == "y":
             rospy.loginfo("Roboter Pose...")
             waypoints.append(move_group.get_current_pose().pose)
             print(waypoints)
+
             last_waypoint = waypoints[-1]    
             position = last_waypoint.position
             orientation = last_waypoint.orientation
             coordinates = f"Position: {position.x}, {position.y}, {position.z}"
             orientation_values = f"Orientation: {orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}"
+
+            joint_goal = move_group.get_current_joint_values()
+            joint_values = ", ".join([f"{val:.4f}" for val in joint_goal])  # Formatierte Ausgabe der Gelenkwerte
+            
             print(coordinates + " | " + orientation_values)
+            print(f"Joint Values: {joint_values}")  # Ausgabe der Gelenk-Werte
             continue
+        
         elif newuser == "n":
-            print("exiting")
+            print("Exiting")
             print(waypoints)
             break
+
 
     now = datetime.now()
     dt_string = now.strftime("%d%m%Y%H%M%S")    

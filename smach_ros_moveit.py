@@ -80,6 +80,23 @@ class RobotControl:
             self.move_group.stop()
             self.move_group.clear_pose_targets()
             return False
+        
+    def move_to_target_carth(self, target_pose, speed):
+        self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
+        (plan, fraction) = self.move_group.compute_cartesian_path(
+                target_pose, 0.01  # waypoints to follow  # eef_step
+                    )
+        rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
+
+        success = self.move_group.execute(plan, wait=True)
+        if success:
+            rospy.loginfo("Bewegung erfolgreich!")
+            return True
+        else:
+            rospy.logwarn("Bewegung fehlgeschlagen!")
+            self.move_group.stop()
+            self.move_group.clear_pose_targets()
+            return False
 
     def move_to_joint_goal(self, joint_goal, speed):
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)

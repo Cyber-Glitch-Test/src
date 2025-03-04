@@ -20,14 +20,17 @@ translation = (0.00, 0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem
 rotation = quaternion_from_euler(-math.pi/2-((17*math.pi)/180), 0, math.pi)  # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 
 # Initialisierte Realsense Kamera
-
 pipeline = rs.pipeline()
 config = rs.config()
 bag_file = "/home/ca/Documents/20250303_163312.bag"  # Pfad zur .bag-Datei anpassen
-config.enable_device_from_file(bag_file, repeat_playback=True)
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-profile = pipeline.start(config)
+try:
+    config.enable_device_from_file(bag_file, repeat_playback=False)
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    profile = pipeline.start(config)
+except RuntimeError as e:
+    rospy.logerr(f"Error starting pipeline: {e}")
+    exit(1)
 
 # Initialize MediaPipe Pose
 mpPose = mp.solutions.pose

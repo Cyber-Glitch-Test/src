@@ -20,7 +20,7 @@ rotation = quaternion_from_euler(-math.pi/2-((17*math.pi)/180), 0, math.pi)  # O
 
 pipeline = rs.pipeline()
 config = rs.config()
-bag_file = "/home/ca/Documents/20250303_163312.bag"  # Pfad zur .bag-Datei anpassen
+bag_file = "/home/ca/Documents/20250303_163312.bag"  # Pfad zur bag Datei
 config.enable_device_from_file(bag_file, repeat_playback=True)
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
@@ -30,12 +30,6 @@ profile = pipeline.start(config)
 mpPose = mp.solutions.pose
 pose = mpPose.Pose()
 mpDraw = mp.solutions.drawing_utils
-
-# Configure your Realsense Camera stream
-config.enable_device(device)
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-profile = pipeline.start(config)
 
 align_to = rs.stream.color
 align = rs.align(align_to)

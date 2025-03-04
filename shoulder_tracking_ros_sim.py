@@ -7,6 +7,7 @@ import mediapipe as mp
 import cv2
 import numpy as np
 import math
+import os
 from geometry_msgs.msg import PointStamped
 from tf.transformations import quaternion_from_euler
 
@@ -19,7 +20,11 @@ rotation = quaternion_from_euler(-math.pi/2-((17*math.pi)/180), 0, math.pi)  # O
 # Initialisierte Realsense Kamera
 pipeline = rs.pipeline()
 config = rs.config()
-bag_file = "/home/ca/Documents/20250303_163312.bag"  # Pfad zur .bag-Datei
+
+bag_file = "/home/ca/Documents/20250303_163312.bag"
+if not os.path.exists(bag_file):
+    rospy.logerr(f"Bag file does not exist: {bag_file}")
+
 try:
     config.enable_device_from_file(bag_file, repeat_playback=True)
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)

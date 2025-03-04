@@ -1,18 +1,11 @@
 
-#############################################################
-
-#Debug schledluer
-
-chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros.py
-
-chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
-
-chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
-
-chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
-
 
 #############################################################
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+roslaunch schledluer Smach_UR.launch use_calibration:=true
+
 
 #Robot Control
 
@@ -66,15 +59,51 @@ source /home/ca/catkin_ws/devel/setup.bash
 
 rosrun schledluer schledluer_ros.py
 
+#Robot Control
+
 source /home/ca/catkin_ws/devel/setup.bash
 
 chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
 
 rosrun schledluer smach_ros_moveit.py
 
-rosrun schledluer schledluer_ros_with_karth.py
+#Intel Realsense Control
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
 
 rosrun schledluer Shoulder_Tracking_ros.py
+
+#Get koords
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
+
+rosrun schledluer schledluer_ros_with_karth.py
+
+#Übergabe Debug
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/Übergabe_test.py
+
+rosrun schledluer Übergabe_test.py
+
+rosrun schledluer Shoulder_Tracking_ros.py
+
+#############################################################
+
+#Debug schledluer
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros.py
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
 
 #############################################################
 
@@ -95,3 +124,6 @@ rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
 source ~/catkin_ws/devel/setup.bash
 
 rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+
+realsense-viewer
+

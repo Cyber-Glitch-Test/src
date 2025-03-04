@@ -13,8 +13,8 @@ from tf.transformations import quaternion_from_euler
 # Set up your ROS node and TransformBroadcaster
 rospy.init_node('Stereo_Cam')
 broadcaster = tf.TransformBroadcaster()
-translation = (0.09, -0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
-rotation = quaternion_from_euler(-math.pi/2-((15*math.pi)/180), 0, math.pi)  # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
+translation = (0.00, 0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
+rotation = quaternion_from_euler(-math.pi/2-((17*math.pi)/180), 0, math.pi)  # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 
 # Initialisierte Realsense Kamera
 realsense_ctx = rs.context()

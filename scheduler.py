@@ -11,7 +11,7 @@ import math
 import copy
 import time
 from tf.transformations import quaternion_from_euler  # type: ignore
-from geometry_msgs.msg import Pose, PoseStamped , PointStamped() # type: ignore
+from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
 from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
@@ -20,7 +20,8 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inpu
 
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [0.5,0.5,-0.5,0.5]
+tcp_to_hum = [0.7151898629008024, 0.007492056498778332, -0.0038630942023753514, 0.6988793927399307]
+
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
 
@@ -41,7 +42,7 @@ rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944
                 np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
 
-rb_arm_on_hum_static = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
+rb_arm_on_hum_static = np.array([0.01127138298740326, -0.40789791168606154, 0.4347020900402719,0.65967278113823, 0.13322073168864898, -0.04031615244060301, 0.7385517357139446])
 
 rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
                     np.array([0.6866488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
@@ -68,8 +69,8 @@ tcp_coversion = 0.2
 
 
 
-savety_koord_1 = np.array([0.2, 0.0, 0.6])
-savety_koord_2 = np.array([-0.2, -0.5, 0.0])
+savety_koord_1 = np.array([0.3, 0.0, 0.6])
+savety_koord_2 = np.array([-0.3, -0.7, 0.0])
 
 #======Robot Control Class======
 
@@ -134,7 +135,7 @@ class RobotControl:
         target_pose.orientation.w = koords[6]
         return target_pose
     
-    def convert_to_pose(self, pose= Pose()):
+    def convert_to_koords(self, pose= Pose()):
         #Konvertiert eine Pose in ein 1x7-Array
         koords = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         koords[0] = pose.position.x
@@ -167,13 +168,13 @@ class RobotControl:
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
         waypoints.append(target_pose)
-        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01) 
+        self.move_group.set_planning_time(10.0) 
+        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.05) 
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
         success = self.move_group.execute(plan, wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
-            self.move_group.clear_pose_targets()
             return True
         else:
             rospy.logwarn("Bewegung fehlgeschlagen!")
@@ -223,10 +224,12 @@ class RobotControl:
         handover_pose_end = Pose()
         handover_pose_end = self.calc_handover_position_schoulder()
         handover_pose_start = copy.deepcopy(handover_pose_end)
-        handover_pose_start.position.y = handover_pose_start.position.y + 0.1
-        
+        handover_pose_start.position.y = handover_pose_end.position.y + 0.1
+        rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(handover_pose_start.position.x, handover_pose_start.position.y, handover_pose_start.position.z))
+
+
         if self.point_inside(handover_pose_end):
-            if not self.move_to_joint_goal( (-3.2750, -1.0030, -2.0312, -3.1267, -0.1795, 4.5501), 20):
+            if not self.move_to_joint_goal( (-4.2306, -1.3338, -2.1678, -2.7849, -1.1028, -0.0036), 20):
                 return False
             if not self.move_to_target_carth(handover_pose_start,speed):
                 return False
@@ -238,18 +241,20 @@ class RobotControl:
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
-            hm = get_Hum_mertics()
-            broadcaster = tf.TransformBroadcaster()
-            listener = tf.TransformListener()  
-
+        hm = get_Hum_mertics()
+        broadcaster = tf.TransformBroadcaster()
+        listener = tf.TransformListener()  
+            #hand_over_position = Pose()
+        for i in range(2):
             for sek in range(10):
                 if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)) and hm.inside_norm_upper and hm.inside_norm_fore:
-                    
+                #if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):    
                     rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
                     rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
                     rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
+                    rospy.loginfo("Schulterkoords: %s", hm.shoulderkoords)
 
-                    translation = [ 0,- (hm.forearmlenght + tcp_coversion),- hm.uperarmlenght]
+                    translation = [ 0, (hm.forearmlenght + tcp_coversion),- hm.uperarmlenght]
                     rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
                     break
 
@@ -257,14 +262,18 @@ class RobotControl:
                     
                     rospy.loginfo("Schulter, Ellbogen erkannt")
                     rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
+                    rospy.loginfo("Schulterkoords: %s", hm.shoulderkoords)
 
-                    translation = [ 0,- (forearmlenghdin + tcp_coversion),- hm.uperarmlenght]
+                    translation = [ 0,(forearmlenghdin + tcp_coversion),- hm.uperarmlenght]
                     rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
                     break
 
                 elif not(all(x == 0 for x in hm.shoulderkoords)):
                     rospy.loginfo("Schulter erkannt")
-                    translation = [ 0,- (forearmlenghdin + tcp_coversion),- upperarmlenghtdin]
+                    rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
+                    rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
+                    rospy.loginfo("Schulterkoords: %s", hm.shoulderkoords)
+                    translation = [ 0,(forearmlenghdin + tcp_coversion),- upperarmlenghtdin]
                     rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
                     break
 
@@ -272,23 +281,36 @@ class RobotControl:
                     rospy.loginfo(f"Nichts erkannt Versuch: {sek}/10")
                     time.sleep(1)
 
-                try:
-                    broadcaster.sendTransform(
-                    translation,  
-                    rotation,    
-                    rospy.Time.now(), 
-                    "handover_position",  
-                    "right_shoulder"         
-                    )
+            try:    
+                    
+                    handover_point = PointStamped()
+                    handover_point.header.frame_id = "right_shoulder"
+                    handover_point.header.stamp = rospy.Time.now() 
+                    handover_point.point.x = translation[0]
+                    handover_point.point.y = -translation[1]
+                    handover_point.point.z = translation[2]
 
                     time.sleep(3)
-                    listener.waitForTransform("base_link","handover_position", rospy.Time(0), rospy.Duration(1.0))
-                    hand_over_position_koords, _ = listener.lookupTransform("base_link","handover_position",  rospy.Time(0))
-                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_koords,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3]]))
+                    listener.waitForTransform("base","right_shoulder", rospy.Time(0), rospy.Duration(1.0))
+                        
+                    broadcaster.sendTransform(
+                        (handover_point.point.x, handover_point.point.y,handover_point.point.z),
+                        (0.0, 0.0, 0.0, 1.0),  
+                        rospy.Time.now(),
+                        "handover_position",
+                        "right_shoulder"
+                    )
 
-                except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+                    listener.waitForTransform("base","handover_position", rospy.Time(0), rospy.Duration(1.0))
+                    hand_over_position_koords, _ = listener.lookupTransform("base","handover_position",  rospy.Time(0))
+
+                    
+                    
+                        #hand_over_position = self.convert_to_pose(np.array([0,-0.4,0.4,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3]]))
+                    hand_over_position = self.convert_to_pose(np.array([-hand_over_position_koords[0],-hand_over_position_koords[1],hand_over_position_koords[2],tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3]]))
+            except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                     rospy.logwarn(f"Error transforming point: {e}")
-            
+
             hm = None
             return hand_over_position
         
@@ -310,7 +332,8 @@ class RobotControl:
         return xmin < point[0] < xmax and ymin < point[1] < ymax and zmin < point[2] < zmax
     
     def pick_up(self,target):
-        over_target = target.copy()  
+        over_target = target.copy()
+        target[2] =  target[2] - 0.01
         over_target[2] += 0.1  
 
         self.move_to_target(self.convert_to_pose(over_target), 5)
@@ -348,11 +371,7 @@ class GripperController:
             self.command.rACT = 0
         self.pub.publish(self.command)
         rospy.sleep(2)
-        #Überprüft ob Greiferbefehl ausgeführt wurde
-        if self.gripper_status.rPR == self.command.rPR:
-            rospy.loginfo(f"Greiferbefehl '{action_type}' erfolgreich ausgeführt.")
-        else:
-            rospy.logwarn(f"Greiferbefehl '{action_type}' fehlgeschlagen!")
+
 #======Get Hum Data======
 
 class get_Hum_mertics:
@@ -431,16 +450,20 @@ class MPickUp(smach.State):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
         self.robot_control = robot_control
         self.counter = 0
+        self.gripper_controller = robot_control.gripper_controller
     def execute(self, userdata):
         #nehme Motor1 auf
-        return 'succeeded_with_HD'
+
 
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                robot_control.pick_up(rb_arm_on_m[self.counter])
+                self.gripper_controller.send_gripper_command('activate')
+                self.gripper_controller.send_gripper_command('close')
+                self.gripper_controller.send_gripper_command('open')
+                robot_control.pick_up(rb_arm_on_m[15])
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
                 return 'succeeded_with_HD'
@@ -468,6 +491,9 @@ class MHoldHD(smach.State):
             if newuser == "y":
                 rospy.loginfo("Roboter Pose...")
                 #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
+                # if not self.robot_control.move_to_target(robot_control.convert_to_pose([0.0,-0.4,0.4,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3]]),5):
+                #     rospy.loginfo('bewegung Fehlgeschlagen')
+                # continue
                 if not self.robot_control.handover_to_hum(5):
                     rospy.loginfo('bewegung Fehlgeschlagen')
                 continue

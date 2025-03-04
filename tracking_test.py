@@ -100,16 +100,16 @@ while not rospy.is_shutdown():
 
         "zum testen feste Koords"
         right_shoulder_point.point.x = 0
-        right_shoulder_point.point.y = -0.5
-        right_shoulder_point.point.z = 0.5
+        right_shoulder_point.point.y = 0.6
+        right_shoulder_point.point.z = 0.6
 
         right_elbow_point.point.x = 0
-        right_elbow_point.point.y = -0.5
-        right_elbow_point.point.z = 0.25
+        right_elbow_point.point.y = 0.5
+        right_elbow_point.point.z = 0.45
 
         right_hand_point.point.x = 0
-        right_hand_point.point.y = -0.25
-        right_hand_point.point.z = -0.25
+        right_hand_point.point.y = 0.45
+        right_hand_point.point.z = 0.45
 
         # Veröffentliche den Frame "camera_link" im TF-Baum
         broadcaster.sendTransform(

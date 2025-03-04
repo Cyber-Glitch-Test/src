@@ -11,72 +11,17 @@ from geometry_msgs.msg import PointStamped  # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
 from filterpy.kalman import KalmanFilter  # type: ignore
 from std_srvs.srv import Empty  # type: ignore
-class KalmanFilter3D:
-    def __init__(self, dt=0.033, process_noise=1e-4, measurement_noise=1e-1):
-        self.kf = KalmanFilter(dim_x=6, dim_z=3) 
-        
-        self.kf.F = np.array([[1, dt, 0,  0,  0,  0],  
-                              [0,  1, 0,  0,  0,  0],
-                              [0,  0, 1, dt,  0,  0],
-                              [0,  0, 0,  1,  0,  0],
-                              [0,  0, 0,  0,  1, dt],
-                              [0,  0, 0,  0,  0,  1]])
-
-        self.kf.H = np.array([[1, 0, 0, 0, 0, 0],  
-                              [0, 0, 1, 0, 0, 0],  
-                              [0, 0, 0, 0, 1, 0]])
-
-
-        self.kf.Q = np.eye(6) * process_noise
-
-
-        self.kf.R = np.eye(3) * measurement_noise
-
-        # Kovarianzmatrix
-        self.kf.P = np.diag([100, 10, 100, 10, 100, 10])
-
-        self.kf.x = np.zeros((6, 1))
-
-        self.last_time = rospy.Time.now()
-
-    def update(self, measurement):
-        """Aktualisiert den Kalman-Filter mit einer neuen Messung."""
-        current_time = rospy.Time.now()
-        dt = (current_time - self.last_time).to_sec()
-        self.last_time = current_time
-
-
-        self.kf.F = np.array([[1, dt, 0,  0,  0,  0],  
-                              [0,  1, 0,  0,  0,  0],
-                              [0,  0, 1, dt,  0,  0],
-                              [0,  0, 0,  1,  0,  0],
-                              [0,  0, 0,  0,  1, dt],
-                              [0,  0, 0,  0,  0,  1]])
-
-        z = np.array(measurement).reshape(3, 1) 
-        self.kf.predict()
-        self.kf.update(z)
-
-    
-        rospy.loginfo(f"Geschätzte Position: {self.kf.x[:3].flatten()}")
-        rospy.loginfo(f"Geschätzte Geschwindigkeit: {self.kf.x[1::2].flatten()}")
-        rospy.loginfo(f"Kovarianzmatrix: {self.kf.P}")
-
-        return self.kf.x[:3].flatten() 
 
 
 
 rospy.init_node('Stereo_Cam')
 
 broadcaster = tf.TransformBroadcaster()
-translation = (-0.25, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
+translation = (-0.30, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
 rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
-# Kalman-Filter für Schulter, Ellbogen und Hand erstellen
-kf_shoulder = KalmanFilter3D()
-kf_elbow = KalmanFilter3D()
-kf_hand = KalmanFilter3D()
+
 
 # Initialisierte Realsense Kamera
 realsense_ctx = rs.context()
@@ -194,7 +139,7 @@ while not rospy.is_shutdown():
         right_shoulder_point.point.x = -shoulder_trans[0]    
         right_shoulder_point.point.y = shoulder_trans[2]
         right_shoulder_point.point.z = shoulder_trans[1]
-
+        rospy.logwarn(f"Schulter: {-shoulder_trans[0],shoulder_trans[2],shoulder_trans[1] }")
 
         right_elbow_point = PointStamped()
         right_elbow_point.header.frame_id = "camera_link"
@@ -222,7 +167,7 @@ while not rospy.is_shutdown():
         # Warte auf die TF-Daten
         try:
             # Warte auf die Transformation
-            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", right_shoulder_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_shoulder_point)
 
             broadcaster.sendTransform(
@@ -234,7 +179,7 @@ while not rospy.is_shutdown():
             )
 
             # Warte auf die Transformation mit dem richtigen Zeitstempel
-            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", right_elbow_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_elbow_point)
 
             broadcaster.sendTransform(
@@ -245,7 +190,7 @@ while not rospy.is_shutdown():
                 "base"
             )
 
-            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", right_hand_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_hand_point)
 
             broadcaster.sendTransform(

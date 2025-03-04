@@ -91,6 +91,14 @@ chmod +x /home/ca/catkin_ws/src/schledluer/src/Übergabe_test.py
 
 rosrun schledluer Übergabe_test.py
 
+#Tracking Debug
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/shoulder_tracking_ros_sim.py
+
+rosrun schledluer shoulder_tracking_ros_sim.py
+
 rosrun schledluer Shoulder_Tracking_ros.py
 
 #############################################################

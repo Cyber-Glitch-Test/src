@@ -22,6 +22,7 @@ pipeline = rs.pipeline()
 config = rs.config()
 
 bag_file = "/home/ca/Documents/20250303_163312.bag"
+
 if not os.path.exists(bag_file):
     rospy.logerr(f"Bag file does not exist: {bag_file}")
 

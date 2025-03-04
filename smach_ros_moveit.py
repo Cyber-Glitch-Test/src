@@ -355,6 +355,20 @@ class M1HoldHD(smach.State):
 
         self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 20)
 
+        ''''DEBUG BLOCK ZUM TESTEN'''
+        while True:
+            newuser = input('enter y/n: ')
+            if newuser == "y":
+                rospy.loginfo("Roboter Pose...")
+                self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
+                if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
+                    rospy.loginfo('bewegung Fehlgeschlagen')
+                continue
+            elif newuser == "n":
+                print("Exiting")
+                break
+            ''''DEBUG BLOCK ZUM TESTEN ENDE'''
+
         if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
             return 'succeeded'  
         return 'succeeded'

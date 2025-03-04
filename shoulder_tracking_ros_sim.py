@@ -19,7 +19,7 @@ rotation = quaternion_from_euler(-math.pi/2-((17*math.pi)/180), 0, math.pi)  # O
 # Initialisierte Realsense Kamera
 pipeline = rs.pipeline()
 config = rs.config()
-bag_file = "~/Documents/20250303_163312.bag"  # Pfad zur .bag-Datei anpassen
+bag_file = "/home/ca/Documents/20250303_163312.bag"  # Pfad zur .bag-Datei
 try:
     config.enable_device_from_file(bag_file, repeat_playback=True)
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)

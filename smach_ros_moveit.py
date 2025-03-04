@@ -150,7 +150,7 @@ class RobotControl:
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
-    def calc_handover_position(self):
+    def calc_handover_position_schoulder(self):
         try:
             hand_over_position = Pose()
             hm = get_Hum_mertics()
@@ -185,7 +185,34 @@ class RobotControl:
                 (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
                 (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
                 rospy.Time.now(),  # Zeitstempel
-                "übergabepunkt",  # Child Frame (Kamera)
+                "Uebergabeposition Schulter",  # Child Frame (Kamera)
+                "world"         # Parent Frame (Weltkoordinatensystem)
+            )
+            return hand_over_position
+        except Exception as e:
+            rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
+            return self.convert_to_pose(rb_arm_on_hum_static)
+        
+    def calc_handover_position_hand(self):
+        try:
+            hand_over_position = Pose()
+            hm = get_Hum_mertics()
+
+            if not(all(x == 0 for x in hm.handkoords)):
+                rospy.loginfo("Hand erkannt")
+                hand_over_position_x = hm.handkoords[0]
+                hand_over_position_y = (hm.handkoords[1] + tcp_coversion)
+                hand_over_position_z = hm.handkoords[2]
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+            else:
+                rospy.loginfo("Keine Hand erkannt")
+                hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+            broadcaster = tf.TransformBroadcaster()
+            broadcaster.sendTransform(
+                (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
+                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
+                rospy.Time.now(),  # Zeitstempel
+                "Uebergabeposition Hand", 
                 "world"         # Parent Frame (Weltkoordinatensystem)
             )
             return hand_over_position
@@ -300,7 +327,7 @@ class M1PickUp(smach.State):
         if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_hum_static), 10):
             return 'succeeded'
 
-        if self.robot_control.point_inside(self.robot_control.calc_handover_position()):
+        if self.robot_control.point_inside(self.robot_control.calc_handover_position_schoulder()):
             return 'succeeded_with_HD'
         else:
             return 'succeeded'
@@ -325,9 +352,8 @@ class M1HoldHD(smach.State):
 
         self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 20)
 
-        if not self.robot_control.move_to_target(self.robot_control.calc_handover_position(),5):
+        if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
             return 'succeeded'  
-    
         return 'succeeded'
 
 class M1Positioning(smach.State):

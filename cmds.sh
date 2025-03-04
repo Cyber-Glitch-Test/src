@@ -67,7 +67,15 @@ chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
 
 rosrun schledluer smach_ros_moveit.py
 
-#Intel Realsense Control
+#Intel Realsense Control links
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking_left.py
+
+rosrun schledluer tracking_left.py
+
+#Intel Realsense Control rechts
 
 source /home/ca/catkin_ws/devel/setup.bash
 

@@ -26,7 +26,7 @@ if not os.path.exists(bag_file):
     rospy.logerr(f"Bag file does not exist: {bag_file}")
 
 try:
-    config.enable_device_from_file(bag_file, repeat_playback=True)
+    config.enable_device_from_file(bag_file)
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
     config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
     profile = pipeline.start(config)

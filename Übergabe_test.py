@@ -19,6 +19,7 @@ from moveit_commander import PlanningSceneInterface
 from geometry_msgs.msg import PoseStamped
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
+from filterpy.kalman import KalmanFilter
 
 #======Posen für Roboterarm====== 
 rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574, 0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
@@ -40,6 +41,54 @@ savety_koord_1 = np.array([0.2, 0.68, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 tcp_coversion=0.25
 
+
+class KalmanFilter3D:
+    def __init__(self, dt=1, process_noise=1e-4, measurement_noise=1e-1):
+        """
+        Kalman-Filter für eine 3D-Position (x, y, z).
+
+        :param dt: Zeitschritt
+        :param process_noise: Unsicherheit im Modell
+        :param measurement_noise: Messrauschen
+        """
+        self.kf = KalmanFilter(dim_x=6, dim_z=3)  # 6 Zustände (Position + Geschwindigkeit für x, y, z), 3 Messungen (x, y, z)
+        
+        # Zustandsübergangsmatrix
+        self.kf.F = np.array([[1, dt, 0,  0,  0,  0],  
+                              [0,  1, 0,  0,  0,  0],
+                              [0,  0, 1, dt,  0,  0],
+                              [0,  0, 0,  1,  0,  0],
+                              [0,  0, 0,  0,  1, dt],
+                              [0,  0, 0,  0,  0,  1]])
+
+        # Messmatrix
+        self.kf.H = np.array([[1, 0, 0, 0, 0, 0],  
+                              [0, 0, 1, 0, 0, 0],  
+                              [0, 0, 0, 0, 1, 0]])
+
+        # Prozessrauschen
+        self.kf.Q = np.eye(6) * process_noise
+
+        # Messrauschen
+        self.kf.R = np.eye(3) * measurement_noise
+
+        # Kovarianzmatrix
+        self.kf.P = np.eye(6) * 500
+
+        # Anfangszustand
+        self.kf.x = np.zeros((6, 1))
+
+    def update(self, measurement):
+        """ Aktualisiert den Kalman-Filter mit einer neuen Messung. """
+        z = np.array(measurement).reshape(3, 1)  # Messung (x, y, z)
+        self.kf.predict()
+        self.kf.update(z)
+        return self.kf.x[:3].flatten()  # Gibt die gefilterte Position zurück (x, y, z)
+
+# Kalman-Filter für Schulter, Ellbogen und Hand erstellen
+kf_shoulder = KalmanFilter3D()
+kf_elbow = KalmanFilter3D()
+kf_hand = KalmanFilter3D()
 class RobotControl:
     def __init__(self, group_name):
         self.group_name = group_name
@@ -158,6 +207,8 @@ class RobotControl:
                 rospy.loginfo("Nichts erkannt")
                 hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
             
+
+
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
                 (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
@@ -198,10 +249,15 @@ class get_Hum_mertics:
                 shoulder_trans, _ = listener.lookupTransform("world", "right_shoulder", time)
                 elbow_trans, _ = listener.lookupTransform("world", "right_elbow", time)
                 hand_trans, _ = listener.lookupTransform("world", "right_hand", time)
+                
+                shoulder_trans = kf_shoulder.update(shoulder_trans)
+                elbow_trans = kf_elbow.update(elbow_trans)
+                hand_trans = kf_hand.update(hand_trans)
 
                 self.shoulderkoords = [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
                 self.elbowkoords = [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
                 self.handkoords = [hand_trans[0], hand_trans[1], hand_trans[2]]
+
             except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                 rospy.logwarn(f"TF Error: {e}")
 

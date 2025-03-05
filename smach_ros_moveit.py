@@ -1,53 +1,46 @@
 #!/usr/bin/env python
 
 import numpy as np
-import csv
 import rospy
 import moveit_commander
 import sys
 import smach
 import smach_ros
-import rtde_control
 import tf
 import math
-from geometry_msgs.msg import Pose
-from geometry_msgs.msg import PointStamped
-from std_msgs.msg import String
+from geometry_msgs.msg import Pose, PoseStamped
 from moveit_msgs.msg import Grasp, PlaceLocation
 from moveit_commander.move_group import MoveGroupCommander
 from moveit_commander import PlanningSceneInterface
-from geometry_msgs.msg import PoseStamped
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
 
-
-
-#======Posen für Roboterarm====== 
-rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574, 0.3565888897535509,0.021838185570339213,-0.9997536365149914,0.0006507883874787611,0.003916171666392069])
-rb_arm_over_m1          = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m1            = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007,0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
-rb_arm_over_m2          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m2            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_over_m3          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m3            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_over_m4          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288,-0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335 ,-0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-
+#======Konstanten====== 
+#Konstanten für Roboterposen (Quaternionen)
+rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
+rb_arm_over_m1          = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m1            = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
+rb_arm_over_m2          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m2            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_over_m3          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m3            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_over_m4          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
+rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+#Konstanten für ergonomische Berechnungen
 height_hum_shoulder = 1.8
-forearmlenghdin = 0.3335 #aus DIN 33402-2 gemittel aus Mann und Frau über alle altersklassen
-upperarmlenghtdin = 0.342 #aus DIN 33402-2 gemittel aus Mann und Frau über alle altersklassen
-tcp_coversion=0.25
+forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
+upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
+tcp_coversion = 0.25
 Hum_det = True
 savety_koord_1 = np.array([0.2, 0.68, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 
-
-
-#======Gripper Control======
+#======Robot Control Class======
 
 class RobotControl:
     def __init__(self, group_name):
+        #Initialisiert die MoveIt-Gruppe und die Greifer-Node
         self.group_name = group_name
         self.move_group = MoveGroupCommander(self.group_name)
         self.gripper_controller = GripperController()
@@ -55,10 +48,9 @@ class RobotControl:
         self.robot = moveit_commander.RobotCommander()
 
         rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
-        #Box-Position definieren
 
+        # Tischfläche in MoveIt zur Kollisionserkennung hinzufügen
         planning_frame = self.move_group.get_planning_frame()
-
         rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
         p = PoseStamped()
@@ -67,21 +59,18 @@ class RobotControl:
         p.pose.position.y = 0.0
         p.pose.position.z = -0.09  # Etwas unter dem Boden
 
-        # Box zur Szene hinzufügen
-
         self.scene.add_box("Tisch", p, size=(3, 2, 0.05))
         rospy.loginfo("Box wurde hinzugefügt.")
 
-        # Zielrahmen für den Endeffektor
-
         eef_link = self.move_group.get_end_effector_link()
-
         rospy.loginfo("Endeffektor-Link: %s", eef_link)
+
         # Setze die maximale Geschwindigkeit und Beschleunigung
         self.move_group.set_max_velocity_scaling_factor(0.1)
         self.move_group.set_max_acceleration_scaling_factor(0.1)
 
     def convert_to_pose(self, koords):
+        #Konvertiert ein 1x7-Array in eine MoveIt-Pose
         target_pose = Pose()
         target_pose.position.x = koords[0]
         target_pose.position.y = koords[1]
@@ -90,11 +79,10 @@ class RobotControl:
         target_pose.orientation.y = koords[4]
         target_pose.orientation.z = koords[5]
         target_pose.orientation.w = koords[6]
-        
         return target_pose
 
-
     def move_to_target(self, target_pose, speed):
+        #Bewegt den Roboter zu einer Zielpose
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         self.move_group.set_pose_target(target_pose)
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
@@ -108,15 +96,14 @@ class RobotControl:
             self.move_group.stop()
             self.move_group.clear_pose_targets()
             return False
-        
+
     def move_to_target_carth(self, target_pose, speed):
+        #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
         waypoints.append(self.move_group.get_current_pose().pose)
         waypoints.append(target_pose)
-        (plan, fraction) = self.move_group.compute_cartesian_path(
-                waypoints, 0.01  # waypoints to follow  # eef_step
-                    )
+        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01)  # waypoints to follow, eef_step
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
         success = self.move_group.execute(plan, wait=True)
@@ -130,6 +117,7 @@ class RobotControl:
             return False
 
     def move_to_joint_goal(self, joint_goal, speed):
+        #Bewegt den Roboter zu einem definierten Gelenkwinkel
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         success = self.move_group.go(joint_goal, wait=True)
         if success:
@@ -142,25 +130,26 @@ class RobotControl:
             return False
 
     def stop_robot(self):
+        #Stoppt die Bewegung des Roboters
         self.move_group.stop()
         rospy.loginfo("Roboter gestoppt!")
 
     def reset_robot(self):
+        #Setzt den Roboter auf die Home-Position zurück
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
     def calc_handover_position_schoulder(self):
+        #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten
         try:
             hand_over_position = Pose()
             hm = get_Hum_mertics()
 
             if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):
                 rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
-                rospy.loginfo("Unterarmlänge:")
-                rospy.loginfo(hm.forearmlenght)
-                rospy.loginfo("Oberarmlänge:")
-                rospy.loginfo(hm.uperarmlenght)
+                rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
+                rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
                 hand_over_position_x = hm.shoulderkoords[0]
                 hand_over_position_y = (hm.shoulderkoords[1] + (hm.forearmlenght + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
@@ -180,20 +169,23 @@ class RobotControl:
             else:
                 rospy.loginfo("Nichts erkannt")
                 hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+
+            # Visualisiere die Übergabeposition in TF
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
-                (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
-                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
+                (hand_over_position_x, hand_over_position_y, hand_over_position_z),  # Position der Übergabeposition
+                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),  # Orientierung
                 rospy.Time.now(),  # Zeitstempel
-                "Uebergabeposition Schulter",  # Child Frame (Kamera)
-                "world"         # Parent Frame (Weltkoordinatensystem)
+                "Uebergabeposition Schulter",  # Child Frame
+                "world"  # Parent Frame
             )
             return hand_over_position
         except Exception as e:
             rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
             return self.convert_to_pose(rb_arm_on_hum_static)
-        
+
     def calc_handover_position_hand(self):
+        """Berechnet die ergonomische Übergabeposition basierend auf Handkoordinaten."""
         try:
             hand_over_position = Pose()
             hm = get_Hum_mertics()
@@ -207,13 +199,15 @@ class RobotControl:
             else:
                 rospy.loginfo("Keine Hand erkannt")
                 hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+
+            # Visualisiere die Übergabeposition in TF
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
-                (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
-                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
+                (hand_over_position_x, hand_over_position_y, hand_over_position_z),  # Position der Übergabeposition
+                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),  # Orientierung
                 rospy.Time.now(),  # Zeitstempel
-                "Uebergabeposition Hand", 
-                "world"         # Parent Frame (Weltkoordinatensystem)
+                "Uebergabeposition Hand",  # Child Frame
+                "world"  # Parent Frame
             )
             return hand_over_position
         except Exception as e:
@@ -221,6 +215,7 @@ class RobotControl:
             return self.convert_to_pose(rb_arm_on_hum_static)
 
     def point_inside(self, pose):
+        #Überprüft, ob die Übergabeposition innerhalb eines Sicherheitsrechtecks liegt
         point = [pose.position.x, pose.position.y, pose.position.z]
         xmin, xmax = savety_koord_1[0] - 1, savety_koord_2[0] + 1
         ymin, ymax = savety_koord_1[1] - 1, savety_koord_2[1] + 1
@@ -231,15 +226,18 @@ class RobotControl:
 
 class GripperController:
     def __init__(self):
+        #Initialisiert den Gripper-Controller
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
         rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
         self.gripper_status = inputMsg.Robotiq2FGripper_robot_input()
         self.command = outputMsg.Robotiq2FGripper_robot_output()
 
     def status_callback(self, msg):
+        #Callback-Funktion, um den Status des Greifers zu empfangen
         self.gripper_status = msg
 
     def send_gripper_command(self, action_type):
+        #Sendet Befehle an den Greifer
         if action_type == 'open':
             self.command.rPR = 0
         elif action_type == 'close':
@@ -257,6 +255,7 @@ class GripperController:
 #======Get Hum Data======
 
 class get_Hum_mertics:
+    #innitiere tracking des Menschen
     def __init__(self):
         self.uperarmlenght = 0
         self.forearmlenght = 0
@@ -266,6 +265,7 @@ class get_Hum_mertics:
         self.calc_arm_lenght()
 
     def camera_listener(self):
+    #lese ROS nachrichten aus
         try:
             time = rospy.Time(0)
             listener = tf.TransformListener()
@@ -284,11 +284,13 @@ class get_Hum_mertics:
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
+    #bestimme ober und unterarm länge
         self.camera_listener()
         self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
         self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
 
     def calc_euclidean_distance(self, point1, point2):
+    #bestimme den euclidischen Abstand zwischen zwei Punkten
         distance = 0.0
         for i in range(len(point1)):
             distance += (point2[i] - point1[i]) ** 2
@@ -304,6 +306,7 @@ class M1PickUp(smach.State):
         self.robot_control = robot_control
 
     def execute(self, userdata):
+        #nehme Motor1 auf
         rospy.loginfo('Executing state: M1PickUp')
         return 'succeeded_with_HD'
         if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_home), 5):
@@ -351,6 +354,20 @@ class M1HoldHD(smach.State):
         ####
 
         self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 20)
+
+        ''''DEBUG BLOCK ZUM TESTEN'''
+        while True:
+            newuser = input('enter y/n: ')
+            if newuser == "y":
+                rospy.loginfo("Roboter Pose...")
+                self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
+                if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
+                    rospy.loginfo('bewegung Fehlgeschlagen')
+                continue
+            elif newuser == "n":
+                print("Exiting")
+                break
+            ''''DEBUG BLOCK ZUM TESTEN ENDE'''
 
         if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
             return 'succeeded'  

@@ -33,7 +33,6 @@ forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über al
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 tcp_coversion = 0.25
 Hum_det = True
-Test = True
 savety_koord_1 = np.array([0.2, 0.68, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 
@@ -357,7 +356,7 @@ class M1HoldHD(smach.State):
         self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 20)
 
         ''''DEBUG BLOCK ZUM TESTEN'''
-        while Test:
+        while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
                 rospy.loginfo("Roboter Pose...")

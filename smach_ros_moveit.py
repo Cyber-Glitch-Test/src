@@ -151,19 +151,19 @@ class RobotControl:
                 rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
                 rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
                 hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] + (hm.forearmlenght + tcp_coversion))
+                hand_over_position_y = (hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
                 hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
             elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
                 rospy.loginfo("Schulter, Ellbogen erkannt")
                 hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] + (forearmlenghdin + tcp_coversion))
+                hand_over_position_y = (hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
                 hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
             elif not(all(x == 0 for x in hm.shoulderkoords)):
                 rospy.loginfo("Schulter erkannt")
                 hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] + (forearmlenghdin + tcp_coversion))
+                hand_over_position_y = (hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
                 hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
             else:
@@ -173,42 +173,62 @@ class RobotControl:
             # Visualisiere die Übergabeposition in TF
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
-                (hand_over_position_x, hand_over_position_y, hand_over_position_z),  # Position der Übergabeposition
+                (hand_over_position.position.x, hand_over_position.position.y, hand_over_position.position.z),  # Position der Übergabeposition
                 (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),  # Orientierung
                 rospy.Time.now(),  # Zeitstempel
                 "Uebergabeposition Schulter",  # Child Frame
-                "world"  # Parent Frame
+                "base"  # Parent Frame
             )
             return hand_over_position
         except Exception as e:
             rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
             return self.convert_to_pose(rb_arm_on_hum_static)
 
-    def calc_handover_position_hand(self):
-        """Berechnet die ergonomische Übergabeposition basierend auf Handkoordinaten."""
+    def reset_robot(self):
+        self.move_group.set_named_target("home")
+        self.move_group.go(wait=True)
+        rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
+
+    def calc_handover_position(self):
         try:
             hand_over_position = Pose()
             hm = get_Hum_mertics()
 
-            if not(all(x == 0 for x in hm.handkoords)):
-                rospy.loginfo("Hand erkannt")
-                hand_over_position_x = hm.handkoords[0]
-                hand_over_position_y = (hm.handkoords[1] + tcp_coversion)
-                hand_over_position_z = hm.handkoords[2]
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-            else:
-                rospy.loginfo("Keine Hand erkannt")
-                hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+            rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
+            rospy.loginfo("Unterarmlänge:")
+            rospy.loginfo(hm.forearmlenght)
+            rospy.logwarn("x: %s", hm.shoulderkoords[0])
+            rospy.logwarn("y: %s", hm.shoulderkoords[1])
+            rospy.logwarn("z: %s", hm.shoulderkoords[2])
+            rospy.loginfo("Oberarmlänge:")
+            rospy.loginfo(hm.uperarmlenght)
 
-            # Visualisiere die Übergabeposition in TF
+            hand_over_position_x = hm.shoulderkoords[0]
+            hand_over_position_y = (hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
+            hand_over_position_z = hm.shoulderkoords[2] -  hm.uperarmlenght
+            hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+            
+            rospy.logwarn("xUe: %s", hand_over_position_x) 
+            rospy.logwarn("yUe: %s", hand_over_position_y)
+            rospy.logwarn("zUe: %s", hand_over_position_z)
+
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
-                (hand_over_position_x, hand_over_position_y, hand_over_position_z),  # Position der Übergabeposition
-                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),  # Orientierung
+                (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
+                (0, 0 ,0, 1),     # Orientierung der Kamera im Weltkoordinatensystem
                 rospy.Time.now(),  # Zeitstempel
-                "Uebergabeposition Hand",  # Child Frame
-                "world"  # Parent Frame
+                "übergabepunkt",  # Child Frame (Kamera)
+                "base"         # Parent Frame (Weltkoordinatensystem)
             )
+            # broadcaster.sendTransform(
+            #     (hm.shoulderkoords[0],hm.shoulderkoords[1],hm.shoulderkoords[2]),  # Position der Kamera im Weltkoordinatensystem
+            #     (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
+            #     rospy.Time.now(),  # Zeitstempel
+            #     "Schulter_KF",  # Child Frame (Kamera)
+            #     "world"         # Parent Frame (Weltkoordinatensystem)
+            # )
+            
+            
             return hand_over_position
         except Exception as e:
             rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
@@ -269,13 +289,13 @@ class get_Hum_mertics:
         try:
             time = rospy.Time(0)
             listener = tf.TransformListener()
-            listener.waitForTransform("world", "right_shoulder", time, rospy.Duration(1.0))
-            listener.waitForTransform("world", "right_elbow", time, rospy.Duration(1.0))
-            listener.waitForTransform("world", "right_hand", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "right_shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "right_elbow", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "right_hand", time, rospy.Duration(1.0))
 
-            shoulder_trans, _ = listener.lookupTransform("world", "right_shoulder", time)
-            elbow_trans, _ = listener.lookupTransform("world", "right_elbow", time)
-            hand_trans, _ = listener.lookupTransform("world", "right_hand", time)
+            shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder", time)
+            elbow_trans, _ = listener.lookupTransform("base",     "right_elbow", time)
+            hand_trans, _ = listener.lookupTransform("base",  "right_hand", time)
 
             self.shoulderkoords = [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
             self.elbowkoords = [elbow_trans[0], elbow_trans[1], elbow_trans[2]]

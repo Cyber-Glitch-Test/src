@@ -1,18 +1,31 @@
+#!/usr/bin/env python
+
 import numpy as np
+import csv
 import rospy
+import moveit_commander
+import sys
+import smach
+import smach_ros
+import rtde_control
 import tf
 import math
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PointStamped
+from std_msgs.msg import String
+from moveit_msgs.msg import Grasp, PlaceLocation
+from moveit_commander.move_group import MoveGroupCommander
+from moveit_commander import PlanningSceneInterface
+from geometry_msgs.msg import PoseStamped
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
 from filterpy.kalman import KalmanFilter
 
 class KalmanFilter3D:
     def __init__(self, dt=1, process_noise=1e-4, measurement_noise=1e-1):
-        """
-        Kalman-Filter für eine 3D-Position (x, y, z).
 
-        :param dt: Zeitschritt
-        :param process_noise: Unsicherheit im Modell
-        :param measurement_noise: Messrauschen
-        """
+        #Kalman-Filter für eine 3D-Position
+
         self.kf = KalmanFilter(dim_x=6, dim_z=3)  # 6 Zustände (Position + Geschwindigkeit für x, y, z), 3 Messungen (x, y, z)
         
         # Zustandsübergangsmatrix

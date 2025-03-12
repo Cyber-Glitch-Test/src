@@ -17,23 +17,43 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inpu
 
 #======Konstanten====== 
 #Konstanten für Roboterposen (Quaternionen)
-rb_arm_home             = np.array([-0.28531283917512756, 0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
-rb_arm_over_m1          = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m1            = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+rb_arm_home              = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
+rb_arm_on_m11            = np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m12            = np.array([0.2631105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m13            = np.array([0.2631105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m14            = np.array([0.2631105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m21            = np.array([0.3431105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m22            = np.array([0.3431105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m23            = np.array([0.3431105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m24            = np.array([0.3431105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m31            = np.array([0.4231105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m32            = np.array([0.4231105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m33            = np.array([0.4231105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m34            = np.array([0.4231105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m41            = np.array([0.5031105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m42            = np.array([0.5031105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m43            = np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
+rb_arm_on_m44            = np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
 rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
-rb_arm_over_m2          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m2            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_over_m3          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m3            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
-rb_arm_over_m4          = np.array([-0.29123786593673395, 0.08147063802929881, 0.19673868186048288, -0.022780021434265017, 0.9997249444880992, -0.005252328539882984, 0.0018759095475076684])
-rb_arm_on_m4            = np.array([-0.29132828185820775, 0.08159780929922979, 0.3055465140144335, -0.0221911382985078, 0.9997396260993958, -0.004924144052386731, 0.001996545268306617])
+
+rb_arm_on_pcb1            = np.array([0.6316488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
+rb_arm_on_pcb2            = np.array([0.6866488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
+rb_arm_on_pcb3            = np.array([0.7416488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
+rb_arm_on_pcb4            = np.array([0.7966488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
+
+rb_arm_on_battery1            = np.array([0.6011670779056063, -0.019193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
+rb_arm_on_battery2            = np.array([0.6011670779056063,  0.103193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
+rb_arm_on_battery3            = np.array([0.7011670779056063, -0.019193581297668794, 0.17018491325288876 ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
+rb_arm_on_battery4            = np.array([0.7011670779056063,  0.101393581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
+
+
 #Konstanten für ergonomische Berechnungen
 height_hum_shoulder = 1.8
 forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
-tcp_coversion = 0.25
+tcp_coversion = 0.35
 Hum_det = True
-savety_koord_1 = np.array([0.2, 0.68, 0.8])
+savety_koord_1 = np.array([0.2, 0.26, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 
 #======Robot Control Class======
@@ -53,14 +73,32 @@ class RobotControl:
         planning_frame = self.move_group.get_planning_frame()
         rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
-        p = PoseStamped()
-        p.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
-        p.pose.position.x = 0.0
-        p.pose.position.y = 0.0
-        p.pose.position.z = -0.09  # Etwas unter dem Boden
+        Tisch = PoseStamped()
+        Tisch.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Tisch.pose.position.x = 0.0
+        Tisch.pose.position.y = 0.0
+        Tisch.pose.position.z = -0.09  # Etwas unter dem Boden
+        
+        self.scene.add_box("Tisch", Tisch, size=(3, 2, 0.05))
+        rospy.loginfo("Tisch wurde Planungszene hinzugefügt.")
 
-        self.scene.add_box("Tisch", p, size=(3, 2, 0.05))
-        rospy.loginfo("Box wurde hinzugefügt.")
+        Wand = PoseStamped()
+        Wand.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Wand.pose.position.x = -0.37
+        Wand.pose.position.y = 0.00
+        Wand.pose.position.z = 0.00  # Etwas unter dem Boden
+        
+        self.scene.add_box("Wand", Wand, size=(0.05, 3, 3))
+        rospy.loginfo("Wand wurde Planungszene hinzugefügt")
+
+        Decke = PoseStamped()
+        Decke.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Decke.pose.position.x = 0.0
+        Decke.pose.position.y = 0.0
+        Decke.pose.position.z = 0.92  # Etwas unter dem Boden
+        
+        self.scene.add_box("Decke", Decke, size=(3, 2, 0.05))
+        rospy.loginfo("Decke wurde Planungszene hinzugefügt.")
 
         eef_link = self.move_group.get_end_effector_link()
         rospy.loginfo("Endeffektor-Link: %s", eef_link)
@@ -86,7 +124,7 @@ class RobotControl:
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         self.move_group.set_pose_target(target_pose)
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
-
+        # rospy.loginfo("0.2662104568594572, -0.35661957908057046, 0.24265798894634866 | Orientation: 0.0050765060764118896, -0.8027125907596652, 0.5948306511336113, 0.042464363811632704")
         success = self.move_group.go(wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
@@ -101,14 +139,15 @@ class RobotControl:
         #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
-        waypoints.append(self.move_group.get_current_pose().pose)
+        #waypoints.append(self.move_group.get_current_pose().pose)
         waypoints.append(target_pose)
-        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01)  # waypoints to follow, eef_step
+        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01) 
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
         success = self.move_group.execute(plan, wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
+            self.move_group.clear_pose_targets()
             return True
         else:
             rospy.logwarn("Bewegung fehlgeschlagen!")
@@ -150,22 +189,23 @@ class RobotControl:
                 rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
                 rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
                 rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
-                hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
+
+                hand_over_position_x = -hm.shoulderkoords[0]
+                hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
             elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
                 rospy.loginfo("Schulter, Ellbogen erkannt")
-                hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
+                hand_over_position_x = -hm.shoulderkoords[0]
+                hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
             elif not(all(x == 0 for x in hm.shoulderkoords)):
                 rospy.loginfo("Schulter erkannt")
-                hand_over_position_x = hm.shoulderkoords[0]
-                hand_over_position_y = (hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
+                hand_over_position_x = -hm.shoulderkoords[0]
+                hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
             else:
                 rospy.loginfo("Nichts erkannt")
                 hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
@@ -189,50 +229,6 @@ class RobotControl:
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
-    def calc_handover_position(self):
-        try:
-            hand_over_position = Pose()
-            hm = get_Hum_mertics()
-
-            rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
-            rospy.loginfo("Unterarmlänge:")
-            rospy.loginfo(hm.forearmlenght)
-            rospy.logwarn("x: %s", hm.shoulderkoords[0])
-            rospy.logwarn("y: %s", hm.shoulderkoords[1])
-            rospy.logwarn("z: %s", hm.shoulderkoords[2])
-            rospy.loginfo("Oberarmlänge:")
-            rospy.loginfo(hm.uperarmlenght)
-
-            hand_over_position_x = hm.shoulderkoords[0]
-            hand_over_position_y = (hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
-            hand_over_position_z = hm.shoulderkoords[2] -  hm.uperarmlenght
-            hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
-            
-            rospy.logwarn("xUe: %s", hand_over_position_x) 
-            rospy.logwarn("yUe: %s", hand_over_position_y)
-            rospy.logwarn("zUe: %s", hand_over_position_z)
-
-            broadcaster = tf.TransformBroadcaster()
-            broadcaster.sendTransform(
-                (hand_over_position_x,hand_over_position_y,hand_over_position_z),  # Position der Kamera im Weltkoordinatensystem
-                (0, 0 ,0, 1),     # Orientierung der Kamera im Weltkoordinatensystem
-                rospy.Time.now(),  # Zeitstempel
-                "übergabepunkt",  # Child Frame (Kamera)
-                "base"         # Parent Frame (Weltkoordinatensystem)
-            )
-            # broadcaster.sendTransform(
-            #     (hm.shoulderkoords[0],hm.shoulderkoords[1],hm.shoulderkoords[2]),  # Position der Kamera im Weltkoordinatensystem
-            #     (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),     # Orientierung der Kamera im Weltkoordinatensystem
-            #     rospy.Time.now(),  # Zeitstempel
-            #     "Schulter_KF",  # Child Frame (Kamera)
-            #     "world"         # Parent Frame (Weltkoordinatensystem)
-            # )
-            
-            
-            return hand_over_position
-        except Exception as e:
-            rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
-            return self.convert_to_pose(rb_arm_on_hum_static)
 
     def point_inside(self, pose):
         #Überprüft, ob die Übergabeposition innerhalb eines Sicherheitsrechtecks liegt
@@ -241,6 +237,17 @@ class RobotControl:
         ymin, ymax = savety_koord_1[1] - 1, savety_koord_2[1] + 1
         zmin, zmax = savety_koord_1[2] - 1, savety_koord_2[2] + 1
         return xmin < point[0] < xmax and ymin < point[1] < ymax and zmin < point[2] < zmax
+    
+    def pick_up(self,target):
+        over_target = target.copy()  
+        over_target[2] += 0.1  
+
+        self.move_to_target(self.convert_to_pose(over_target), 5)
+        self.gripper_controller.send_gripper_command('open')
+        self.move_to_target_carth(self.convert_to_pose(target), 10)
+        self.gripper_controller.send_gripper_command('close')
+        self.move_to_target_carth(self.convert_to_pose(over_target), 5)
+
 
 #======Gripper Control======
 
@@ -269,9 +276,8 @@ class GripperController:
             self.command.rFR = 150
         elif action_type == 'deactivate':
             self.command.rACT = 0
-        rospy.sleep(2)
         self.pub.publish(self.command)
-
+        rospy.sleep(2)
 #======Get Hum Data======
 
 class get_Hum_mertics:
@@ -285,22 +291,26 @@ class get_Hum_mertics:
         self.calc_arm_lenght()
 
     def camera_listener(self):
-    #lese ROS nachrichten aus
+    #lese tf für Schulter Elebogen und Hand aus
         try:
+
             time = rospy.Time(0)
             listener = tf.TransformListener()
+
             listener.waitForTransform("base", "right_shoulder", time, rospy.Duration(1.0))
-            listener.waitForTransform("base", "right_elbow", time, rospy.Duration(1.0))
-            listener.waitForTransform("base", "right_hand", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "right_elbow",    time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "right_hand",     time, rospy.Duration(1.0))
 
-            shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder", time)
-            elbow_trans, _ = listener.lookupTransform("base",     "right_elbow", time)
-            hand_trans, _ = listener.lookupTransform("base",  "right_hand", time)
+            shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder",  time)
+            elbow_trans,    _ = listener.lookupTransform("base", "right_elbow",     time)
+            hand_trans,     _ = listener.lookupTransform("base", "right_hand",      time)
 
-            self.shoulderkoords = [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
-            self.elbowkoords = [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
-            self.handkoords = [hand_trans[0], hand_trans[1], hand_trans[2]]
+            self.shoulderkoords =   [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
+            self.elbowkoords =      [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
+            self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
+
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
@@ -328,7 +338,27 @@ class M1PickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         rospy.loginfo('Executing state: M1PickUp')
-        return 'succeeded_with_HD'
+        # return 'succeeded_with_HD'
+        ''''DEBUG BLOCK ZUM TESTEN'''
+        while True:
+            newuser = input('enter y/n: ')
+            if newuser == "y":
+                rospy.loginfo("Roboter Pose...")
+                # self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
+                self.robot_control.move_to_joint_goal( (3.3683, -1.6009, -1.7612, -1.3701, 1.5682, 1.7825, ),5)
+                self.robot_control.gripper_controller.send_gripper_command('activate')
+                self.robot_control.gripper_controller.send_gripper_command('close')
+                self.robot_control.gripper_controller.send_gripper_command('open')
+                self.robot_control.pick_up(rb_arm_on_m11)
+                self.robot_control.move_to_joint_goal((3.0208, -1.0591, -2.3136, -2.8051, -0.1158, 1.4369), 10)
+                return 'succeeded_with_HD'
+            elif newuser == "n":
+                return 'succeeded'
+                print("Exiting")
+                break
+        ''''DEBUG BLOCK ZUM TESTEN ENDE'''
+        #self.robot_control.pick_up(rb_arm_on_m11)
+        return 'succeeded'
         if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_home), 5):
             return 'succeeded'
 
@@ -336,7 +366,7 @@ class M1PickUp(smach.State):
         self.robot_control.gripper_controller.send_gripper_command('close')
         self.robot_control.gripper_controller.send_gripper_command('open')
 
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_over_m1), 10):
+        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(), 10):
             return 'succeeded'
 
         if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_m1), 5):
@@ -362,36 +392,32 @@ class M1Hold(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1Hold')
                 
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_hum_static), 10):
-            return 'succeeded'
-        return 'succeeded'
+
 class M1HoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
         self.robot_control = robot_control
     def execute(self, userdata):
-        rospy.loginfo('Executing state: M1Hold')
+        rospy.loginfo('Executing state: M1HoldHD')
         ####
-
-        self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 20)
-
+        #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
                 rospy.loginfo("Roboter Pose...")
-                self.robot_control.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
-                if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
+                #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
+                if not self.robot_control.move_to_target_carth(self.robot_control.calc_handover_position_schoulder(),2.5):
                     rospy.loginfo('bewegung Fehlgeschlagen')
                 continue
             elif newuser == "n":
                 print("Exiting")
                 break
-            ''''DEBUG BLOCK ZUM TESTEN ENDE'''
-
-        if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
-            return 'succeeded'  
+        ''''DEBUG BLOCK ZUM TESTEN ENDE'''
         return 'succeeded'
+        # if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
+        #     return 'succeeded'  
+        # return 'succeeded'
 
 class M1Positioning(smach.State):
     def __init__(self):
@@ -555,8 +581,6 @@ class BatteryFixing(smach.State):
         rospy.loginfo('Executing state: BatteryFixing')
         ####
         return 'succeeded'
-
-
 
 
 if __name__ == "__main__":

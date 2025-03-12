@@ -1,3 +1,14 @@
+source /home/ca/catkin_ws/devel/setup.bash
+
+roslaunch schledluer Smach_UR.launch
+
+#############################################################
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
+
+rosrun schledluer smach_ros_moveit.py
 
 
 #############################################################

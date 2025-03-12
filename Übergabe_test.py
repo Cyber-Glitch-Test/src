@@ -64,14 +64,14 @@ class RobotControl:
         target_pose.orientation.y = koords[4]
         target_pose.orientation.z = koords[5]
         target_pose.orientation.w = koords[6]
-        broadcaster = tf.TransformBroadcaster()
-        broadcaster.sendTransform(
-            (target_pose.position.x,target_pose.position.y,target_pose.position.z),  # Position der Kamera im Weltkoordinatensystem
-            (target_pose.orientation.x,target_pose.orientation.y,target_pose.orientation.z,target_pose.orientation.w),     # Orientierung der Kamera im Weltkoordinatensystem
-            rospy.Time.now(),  # Zeitstempel
-            "übergabepunkt",  # Child Frame (Kamera)
-            "world"         # Parent Frame (Weltkoordinatensystem)
-        )
+        # broadcaster = tf.TransformBroadcaster()
+        # broadcaster.sendTransform(
+        #     (target_pose.position.x,target_pose.position.y,target_pose.position.z),  # Position der Kamera im Weltkoordinatensystem
+        #     (target_pose.orientation.x,target_pose.orientation.y,target_pose.orientation.z,target_pose.orientation.w),     # Orientierung der Kamera im Weltkoordinatensystem
+        #     rospy.Time.now(),  # Zeitstempel
+        #     "übergabepunkt",  # Child Frame (Kamera)
+        #     "world"         # Parent Frame (Weltkoordinatensystem)
+        # )
         return target_pose
 
     def move_to_target(self, target_pose, speed):
@@ -146,11 +146,12 @@ class RobotControl:
 
 
 
+            rospy.loginfo("Schulter erkannt")
+            hand_over_position_x = -hm.shoulderkoords[0]
+            hand_over_position_y = -(hm.shoulderkoords[1] + (forearmlenghdin + tcp_coversion))
+            hand_over_position_z = (hm.shoulderkoords[2] - upperarmlenghtdin)
+            hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
 
-            hand_over_position_x = hm.shoulderkoords[0]
-            hand_over_position_y = (hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
-            hand_over_position_z = hm.shoulderkoords[2] -  hm.uperarmlenght
-            hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0, 0, 0, 1]))
 
             rospy.logwarn("xUe: %s", hand_over_position_x) 
             rospy.logwarn("yUe: %s", hand_over_position_y)

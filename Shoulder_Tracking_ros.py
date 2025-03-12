@@ -10,6 +10,7 @@ import math
 from geometry_msgs.msg import PointStamped
 from tf.transformations import quaternion_from_euler
 from filterpy.kalman import KalmanFilter
+from std_srvs.srv import Empty
 class KalmanFilter3D:
     def __init__(self, dt=0.033, process_noise=1e-4, measurement_noise=1e-1):
         self.kf = KalmanFilter(dim_x=6, dim_z=3)  # 6 Zustände (Position + Geschwindigkeit für x, y, z), 3 Messungen (x, y, z)
@@ -70,9 +71,10 @@ class KalmanFilter3D:
 
 # Set up your ROS node and TransformBroadcaster
 rospy.init_node('Stereo_Cam')
+rospy.Service('/shoulder_tracking_service', Empty, lambda req: None)
 broadcaster = tf.TransformBroadcaster()
-translation = (0.00, 0.18, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
-rotation = quaternion_from_euler(((-17/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
+translation = (-0.1, -0.13, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
+rotation = quaternion_from_euler(((-19/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
 # Kalman-Filter für Schulter, Ellbogen und Hand erstellen
@@ -141,7 +143,7 @@ while not rospy.is_shutdown():
         mpDraw.draw_landmarks(color_image, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
 
         # Get coordinates of the right shoulder (index 12)
-        right_shoulder_landmark = results.pose_landmarks.landmark[12]
+        right_shoulder_landmark = results.pose_landmarks.landmark[11]
         x_right_shoulder = int(right_shoulder_landmark.x * color_image.shape[1])
         y_right_shoulder = int(right_shoulder_landmark.y * color_image.shape[0])
 
@@ -150,7 +152,7 @@ while not rospy.is_shutdown():
         y_right_shoulder = max(0, min(y_right_shoulder, color_image.shape[0] - 1))
 
         # Get coordinates of the right elbow (index 14)
-        right_elbow_landmark = results.pose_landmarks.landmark[14]
+        right_elbow_landmark = results.pose_landmarks.landmark[13]
         x_right_elbow = int(right_elbow_landmark.x * color_image.shape[1])
         y_right_elbow = int(right_elbow_landmark.y * color_image.shape[0])
 
@@ -159,7 +161,7 @@ while not rospy.is_shutdown():
         y_right_elbow = max(0, min(y_right_elbow, color_image.shape[0] - 1))
 
         # Get coordinates of the right hand (index 16)
-        right_hand_landmark = results.pose_landmarks.landmark[16]
+        right_hand_landmark = results.pose_landmarks.landmark[15]
         x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
         y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
 

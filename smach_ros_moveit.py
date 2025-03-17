@@ -8,6 +8,7 @@ import smach
 import smach_ros
 import tf
 import math
+import copy
 from geometry_msgs.msg import Pose, PoseStamped
 from moveit_msgs.msg import Grasp, PlaceLocation
 from moveit_commander.move_group import MoveGroupCommander
@@ -178,6 +179,18 @@ class RobotControl:
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
+
+    def handover_to_hum(self,speed):
+        #führe die Roboter bewegung zum Menschen aus
+
+        handover_pose_end = Pose()
+        handover_pose_end = self.calc_handover_position_schoulder()
+        handover_pose_start = Pose()
+        handover_pose_start = copy.deepcopy(handover_pose_end)
+        handover_pose_start.position.y = handover_pose_start.position.y - 0.1
+        self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
+        self.move_to_target_carth(handover_pose_start,speed)
+        self.move_to_target_carth(handover_pose_end,speed)
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten

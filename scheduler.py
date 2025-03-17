@@ -51,11 +51,9 @@ rb_arm_on_battery =[np.array([0.6011670779056063, -0.019193581297668794, 0.17018
 
 
 #Konstanten für ergonomische Berechnungen
-height_hum_shoulder = 1.8
 forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 tcp_coversion = 0.35
-Hum_det = True
 savety_koord_1 = np.array([0.2, 0.26, 0.8])
 savety_koord_2 = np.array([-0.2, 0.5, 0.3])
 

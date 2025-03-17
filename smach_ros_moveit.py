@@ -18,34 +18,34 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inpu
 
 #======Konstanten====== 
 #Konstanten für Roboterposen (Quaternionen)
-rb_arm_home              = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
-rb_arm_on_m11            = np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m12            = np.array([0.2631105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m13            = np.array([0.2631105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m14            = np.array([0.2631105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m21            = np.array([0.3431105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m22            = np.array([0.3431105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m23            = np.array([0.3431105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m24            = np.array([0.3431105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m31            = np.array([0.4231105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m32            = np.array([0.4231105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m33            = np.array([0.4231105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m34            = np.array([0.4231105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m41            = np.array([0.5031105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m42            = np.array([0.5031105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m43            = np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_m44            = np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])
-rb_arm_on_hum_static    = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
+rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
+rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
+rb_arm_on_hum_static = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
 
-rb_arm_on_pcb1            = np.array([0.6316488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
-rb_arm_on_pcb2            = np.array([0.6866488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
-rb_arm_on_pcb3            = np.array([0.7416488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
-rb_arm_on_pcb4            = np.array([0.7966488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])
+rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
+                    np.array([0.6866488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
+                    np.array([0.7416488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
+                    np.array([0.7966488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581])]
 
-rb_arm_on_battery1            = np.array([0.6011670779056063, -0.019193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
-rb_arm_on_battery2            = np.array([0.6011670779056063,  0.103193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
-rb_arm_on_battery3            = np.array([0.7011670779056063, -0.019193581297668794, 0.17018491325288876 ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
-rb_arm_on_battery4            = np.array([0.7011670779056063,  0.101393581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])
+rb_arm_on_battery =[np.array([0.6011670779056063, -0.019193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437]),
+                    np.array([0.6011670779056063,  0.103193581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437]),
+                    np.array([0.7011670779056063, -0.019193581297668794, 0.17018491325288876 ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437]),
+                    np.array([0.7011670779056063,  0.101393581297668794, 0.17018491325288876   ,0.0032537936019315095, 0.999980030621379, 0.0013019363032707083, 0.00525891124897437])]
 
 
 #Konstanten für ergonomische Berechnungen
@@ -140,7 +140,6 @@ class RobotControl:
         #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
-        #waypoints.append(self.move_group.get_current_pose().pose)
         waypoints.append(target_pose)
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01) 
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
@@ -182,12 +181,11 @@ class RobotControl:
 
     def handover_to_hum(self,speed):
         #führe die Roboter bewegung zum Menschen aus
-
         handover_pose_end = Pose()
         handover_pose_end = self.calc_handover_position_schoulder()
         handover_pose_start = Pose()
         handover_pose_start = copy.deepcopy(handover_pose_end)
-        handover_pose_start.position.y = handover_pose_start.position.y - 0.1
+        handover_pose_start.position.y = handover_pose_start.position.y + 0.1
         self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
         self.move_to_target_carth(handover_pose_start,speed)
         self.move_to_target_carth(handover_pose_end,speed)
@@ -241,7 +239,6 @@ class RobotControl:
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
-
 
     def point_inside(self, pose):
         #Überprüft, ob die Übergabeposition innerhalb eines Sicherheitsrechtecks liegt
@@ -343,70 +340,37 @@ robot_control = RobotControl("manipulator")
 
 ################################ Initialisiere Smachstates ################################
 
-class M1PickUp(smach.State):
+class MPickUp(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
         self.robot_control = robot_control
-
+        self.counter = 0
     def execute(self, userdata):
         #nehme Motor1 auf
-        rospy.loginfo('Executing state: M1PickUp')
         # return 'succeeded_with_HD'
+
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                rospy.loginfo("Roboter Pose...")
-                # self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
-                self.robot_control.move_to_joint_goal( (3.3683, -1.6009, -1.7612, -1.3701, 1.5682, 1.7825, ),5)
-                self.robot_control.gripper_controller.send_gripper_command('activate')
-                self.robot_control.gripper_controller.send_gripper_command('close')
-                self.robot_control.gripper_controller.send_gripper_command('open')
-                self.robot_control.pick_up(rb_arm_on_m11)
-                self.robot_control.move_to_joint_goal((3.0208, -1.0591, -2.3136, -2.8051, -0.1158, 1.4369), 10)
-                return 'succeeded_with_HD'
+                robot_control.pick_up(rb_arm_on_m[self.counter])
+                self.counter += 1
+                rospy.loginfo(f"Nehme Motor {self.counter} auf")
+                if(self.counter <= 15):
+                    return 'succeeded_with_HD'
+                elif (self.counter % 4 == 0):
+                    return "succeeded_to_PCB"
             elif newuser == "n":
                 return 'succeeded'
-                print("Exiting")
-                break
-        ''''DEBUG BLOCK ZUM TESTEN ENDE'''
-        #self.robot_control.pick_up(rb_arm_on_m11)
-        return 'succeeded'
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_home), 5):
-            return 'succeeded'
 
-        self.robot_control.gripper_controller.send_gripper_command('activate')
-        self.robot_control.gripper_controller.send_gripper_command('close')
-        self.robot_control.gripper_controller.send_gripper_command('open')
-
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(), 10):
-            return 'succeeded'
-
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_m1), 5):
-            return 'succeeded'
-
-        self.robot_control.gripper_controller.send_gripper_command('close')
-
-        if not self.robot_control.move_to_target_carth(self.robot_control.convert_to_pose(rb_arm_over_m1), 10):
-            return 'succeeded'
-
-        if not self.robot_control.move_to_target(self.robot_control.convert_to_pose(rb_arm_on_hum_static), 10):
-            return 'succeeded'
-
-        if self.robot_control.point_inside(self.robot_control.calc_handover_position_schoulder()):
-            return 'succeeded_with_HD'
-        else:
-            return 'succeeded'
-
-class M1Hold(smach.State):
+class MHold(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
         self.robot_control = robot_control
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1Hold')
                 
-
-class M1HoldHD(smach.State):
+class MHoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
         self.robot_control = robot_control
@@ -432,7 +396,7 @@ class M1HoldHD(smach.State):
         #     return 'succeeded'  
         # return 'succeeded'
 
-class M1Positioning(smach.State):
+class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
 
@@ -441,106 +405,6 @@ class M1Positioning(smach.State):
         ####
         return 'succeeded'
 
-class M2PickUp(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_with_HD'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M2PickUp')
-        ####
-        return 'succeeded'
-
-class M2Hold(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M2Hold')
-        ####
-        return 'succeeded'
-    
-class M2HoldHD(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M2Hold')
-        ####
-        return 'succeeded'
-
-class M2Positioning(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M2Positioning')
-        ####
-        return 'succeeded'
-
-class M3PickUp(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_with_HD'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M3PickUp')
-        ####
-        return 'succeeded'
-
-class M3Hold(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M3Hold')
-        ####
-        return 'succeeded'
-    
-class M3HoldHD(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M3Hold')
-        ####
-        return 'succeeded'
-
-class M3Positioning(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M3Positioning')
-        ####
-        return 'succeeded'
-
-class M4PickUp(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_with_HD'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M4PickUp')
-        ####
-        return 'succeeded'
-
-class M4Hold(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M4Hold')
-        ####
-        return 'succeeded'
-    
-class M4HoldHD(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M4Hold')
-        ####
-        return 'succeeded'
-
-class M4Positioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
 
@@ -552,10 +416,8 @@ class M4Positioning(smach.State):
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
-
     def execute(self, userdata):
         rospy.loginfo('Executing state: PCB1PickUpAndPositioning')
-        ####
         return 'succeeded'
 
 class PCB2PickUpAndPositioning(smach.State):
@@ -576,7 +438,6 @@ class CopperFixing1To6(smach.State):
         ####
         return 'succeeded'
 
-
 class BatteryPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -589,11 +450,15 @@ class BatteryPositioning(smach.State):
 class BatteryFixing(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
+        self.counter = 0
 
     def execute(self, userdata):
         rospy.loginfo('Executing state: BatteryFixing')
-        ####
-        return 'succeeded'
+        if(self.counter <= 3):
+            self.counter += 1
+            return 'succeeded'
+        else:
+            return 'succeeded_end'
 
 
 if __name__ == "__main__":
@@ -602,53 +467,27 @@ if __name__ == "__main__":
     moveit_commander.roscpp_initialize(sys.argv)
 
     robot_control = RobotControl("manipulator")
-    
 
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:
         # Smachstates
-        smach.StateMachine.add('M1PickUp', M1PickUp(),
-                               transitions={'succeeded':'M1Hold',
-                                            'succeeded_with_HD':'M1HoldHD'})
-        smach.StateMachine.add('M1Hold', M1Hold(),
-                               transitions={'succeeded':'M1Positioning'})
-        smach.StateMachine.add('M1HoldHD', M1HoldHD(),
-                               transitions={'succeeded':'M1Positioning'})
-        smach.StateMachine.add('M1Positioning', M1Positioning(),
-                               transitions={'succeeded':'M2PickUp'})
-        smach.StateMachine.add('M2PickUp', M2PickUp(),
-                               transitions={'succeeded':'M2Hold',
-                                            'succeeded_with_HD':'M2HoldHD'})
-        smach.StateMachine.add('M2Hold', M2Hold(),
-                               transitions={'succeeded':'M2Positioning',})
-        smach.StateMachine.add('M2HoldHD', M2HoldHD(),
-                               transitions={'succeeded':'M2Positioning'})
-        smach.StateMachine.add('M2Positioning', M2Positioning(),
-                               transitions={'succeeded':'M3PickUp'})
-        smach.StateMachine.add('M3PickUp', M3PickUp(),
-                               transitions={'succeeded':'M3Hold',
-                                            'succeeded_with_HD':'M3HoldHD'})
-        smach.StateMachine.add('M3Hold', M3Hold(),
-                               transitions={'succeeded':'M3Positioning'})
-        smach.StateMachine.add('M3HoldHD', M3HoldHD(),
-                               transitions={'succeeded':'M3Positioning'})
-        smach.StateMachine.add('M3Positioning', M3Positioning(),
-                               transitions={'succeeded':'M4PickUp'})
-        smach.StateMachine.add('M4PickUp', M4PickUp(),
-                               transitions={'succeeded':'M4Hold',
-                                            'succeeded_with_HD':'M4HoldHD'})
-        smach.StateMachine.add('M4Hold', M4Hold(),
-                               transitions={'succeeded':'M4Positioning'})
-        smach.StateMachine.add('M4HoldHD', M4HoldHD(),
-                               transitions={'succeeded':'M4Positioning'})
-        smach.StateMachine.add('M4Positioning', M4Positioning(),
-                               transitions={'succeeded':'PCB1PickUpAndPositioning'})
+        smach.StateMachine.add('MPickUp', MPickUp(),
+                               transitions={'succeeded':'MHold',
+                                            'succeeded_with_HD':'MHoldHD',
+                                            'succeeded_to_PCB':'PCB1PickUpAndPositioning'})
+        smach.StateMachine.add('MHold', MHold(),
+                               transitions={'succeeded':'MPositioning'})
+        smach.StateMachine.add('MHoldHD', MHoldHD(),
+                               transitions={'succeeded':'MPositioning'})
+        smach.StateMachine.add('MPositioning', MPositioning(),
+                               transitions={'succeeded':'MPickUp'})
         smach.StateMachine.add('PCB1PickUpAndPositioning', PCB1PickUpAndPositioning(),
                                transitions={'succeeded':'PCB2PickUpAndPositioning'})
         smach.StateMachine.add('PCB2PickUpAndPositioning', PCB2PickUpAndPositioning(),
                                transitions={'succeeded':'BatteryPositioning'})
         smach.StateMachine.add('BatteryPositioning', BatteryPositioning(),
-                               transitions={'succeeded':'finished'})
+                               transitions={'succeeded_end':'finished',
+                                            'succeeded':'MPickUp'})
 
     # Iniizialisiere den introspection server
 try:

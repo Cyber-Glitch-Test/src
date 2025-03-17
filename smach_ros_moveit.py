@@ -19,6 +19,7 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inpu
 #======Konstanten====== 
 #Konstanten für Roboterposen (Quaternionen)
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
+
 rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.2631105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.2631105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
@@ -35,6 +36,7 @@ rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944
                 np.array([0.5031105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
+
 rb_arm_on_hum_static = np.array([-0.2872170720236103, -0.27175826228875855, 0.38259507410129007, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398])
 
 rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.17244747378939593  ,0.7074744139374561, -0.7066996961733456, 0.007443486177193687, 0.0002959153328908581]),
@@ -154,6 +156,18 @@ class RobotControl:
             self.move_group.stop()
             self.move_group.clear_pose_targets()
             return False
+
+    def move_to_taget_plan(self, waypoints, speed):
+        #Fahre mit dem Roboterarm eine Reihe von Waipoints an
+        self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
+        for i, waypoint in enumerate(waypoints):
+            self.move_group.set_pose_target(waypoint)
+            plan = self.move_group.plan()  # Plane die Bewegung zu diesem Waypoint
+            if plan[0]:  # Plan existiert?
+                rospy.loginfo(f"Führe Waypoint {i+1} aus...")
+                self.move_group.execute(plan[1], wait=True)  # Führe den Plan aus
+            else:
+                rospy.logwarn(f"Konnte Waypoint {i+1} nicht erreichen!")
 
     def move_to_joint_goal(self, joint_goal, speed):
         #Bewegt den Roboter zu einem definierten Gelenkwinkel
@@ -342,7 +356,7 @@ robot_control = RobotControl("manipulator")
 
 class MPickUp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
+        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','succeeded_to_PCB'])
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
@@ -359,7 +373,7 @@ class MPickUp(smach.State):
                 if(self.counter <= 15):
                     return 'succeeded_with_HD'
                 elif (self.counter % 4 == 0):
-                    return "succeeded_to_PCB"
+                    return 'succeeded_to_PCB'
             elif newuser == "n":
                 return 'succeeded'
 
@@ -449,7 +463,7 @@ class BatteryPositioning(smach.State):
 
 class BatteryFixing(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_end'])
         self.counter = 0
 
     def execute(self, userdata):

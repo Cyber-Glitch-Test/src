@@ -197,13 +197,16 @@ class RobotControl:
         handover_pose_end = self.calc_handover_position_schoulder()
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_start.position.y + 0.1
-        if not self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5):
+        if self.point_inside(handover_pose_end):
+            if not self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5):
+                return False
+            if not self.move_to_target_carth(handover_pose_start,speed):
+                return False
+            if not self.move_to_target_carth(handover_pose_end,speed):
+                return False
+            return True
+        else:
             return False
-        if not self.move_to_target_carth(handover_pose_start,speed):
-            return False
-        if not self.move_to_target_carth(handover_pose_end,speed):
-            return False
-        return True
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten

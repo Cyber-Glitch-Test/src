@@ -197,12 +197,15 @@ class RobotControl:
         #führe die Roboter bewegung zum Menschen aus
         handover_pose_end = Pose()
         handover_pose_end = self.calc_handover_position_schoulder()
-        handover_pose_start = Pose()
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_start.position.y + 0.1
-        self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5)
-        self.move_to_target_carth(handover_pose_start,speed)
-        self.move_to_target_carth(handover_pose_end,speed)
+        if not self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5):
+            return False
+        if not self.move_to_target_carth(handover_pose_start,speed):
+            return False
+        if not self.move_to_target_carth(handover_pose_end,speed):
+            return False
+        return True
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten
@@ -271,7 +274,6 @@ class RobotControl:
         self.move_to_target_carth(self.convert_to_pose(target), 10)
         self.gripper_controller.send_gripper_command('close')
         self.move_to_target_carth(self.convert_to_pose(over_target), 5)
-
 
 #======Gripper Control======
 
@@ -370,10 +372,7 @@ class MPickUp(smach.State):
                 robot_control.pick_up(rb_arm_on_m[self.counter])
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
-                if(self.counter <= 15):
-                    return 'succeeded_with_HD'
-                elif (self.counter % 4 == 0):
-                    return 'succeeded_to_PCB'
+                return 'succeeded_with_HD'
             elif newuser == "n":
                 return 'succeeded'
 
@@ -398,7 +397,7 @@ class MHoldHD(smach.State):
             if newuser == "y":
                 rospy.loginfo("Roboter Pose...")
                 #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
-                if not self.robot_control.move_to_target_carth(self.robot_control.calc_handover_position_schoulder(),2.5):
+                if not self.robot_control.handover_to_hum(5):
                     rospy.loginfo('bewegung Fehlgeschlagen')
                 continue
             elif newuser == "n":
@@ -413,11 +412,15 @@ class MHoldHD(smach.State):
 class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
-
+        self.robot_control = robot_control
+        self.counter = 0
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1Positioning')
-        ####
-        return 'succeeded'
+        self.counter += 1
+        if (self.counter % 4==0):
+            return 'succeeded_to_PCB'
+        else:
+            return 'succeeded'
 
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
@@ -468,8 +471,8 @@ class BatteryFixing(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state: BatteryFixing')
-        if(self.counter <= 3):
-            self.counter += 1
+        self.counter += 1
+        if(self.counter <= 4):
             return 'succeeded'
         else:
             return 'succeeded_end'
@@ -487,14 +490,14 @@ if __name__ == "__main__":
         # Smachstates
         smach.StateMachine.add('MPickUp', MPickUp(),
                                transitions={'succeeded':'MHold',
-                                            'succeeded_with_HD':'MHoldHD',
-                                            'succeeded_to_PCB':'PCB1PickUpAndPositioning'})
+                                            'succeeded_with_HD':'MHoldHD'})
         smach.StateMachine.add('MHold', MHold(),
                                transitions={'succeeded':'MPositioning'})
         smach.StateMachine.add('MHoldHD', MHoldHD(),
                                transitions={'succeeded':'MPositioning'})
         smach.StateMachine.add('MPositioning', MPositioning(),
-                               transitions={'succeeded':'MPickUp'})
+                               transitions={'succeeded':'MPickUp',
+                                            'succeeded_to_PCB':'PCB1PickUpAndPositioning'})
         smach.StateMachine.add('PCB1PickUpAndPositioning', PCB1PickUpAndPositioning(),
                                transitions={'succeeded':'PCB2PickUpAndPositioning'})
         smach.StateMachine.add('PCB2PickUpAndPositioning', PCB2PickUpAndPositioning(),
@@ -504,11 +507,11 @@ if __name__ == "__main__":
                                             'succeeded':'MPickUp'})
 
     # Iniizialisiere den introspection server
-try:
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
-    sis.start()
-except AttributeError as e:
-    rospy.logwarn(f"IntrospectionServer not found. Falling back to manual debugging. Error: {e}")
+    try:
+        sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
+        sis.start()
+    except AttributeError as e:
+        rospy.logwarn(f"IntrospectionServer not found. Falling back to manual debugging. Error: {e}")
 
     # Führe die Statemachine aus
     outcome = sm.execute()

@@ -14,6 +14,4 @@ graph TD;
 
     BatteryPositioning -->|succeeded_end| finished
     BatteryPositioning -->|succeeded| MPickUp
-
-
 ```

@@ -305,6 +305,11 @@ class GripperController:
             self.command.rACT = 0
         self.pub.publish(self.command)
         rospy.sleep(2)
+        #Überprüft ob Greiferbefehl ausgeführt wurde
+        if self.gripper_status.rPR == self.command.rPR:
+            rospy.loginfo(f"Greiferbefehl '{action_type}' erfolgreich ausgeführt.")
+        else:
+            rospy.logwarn(f"Greiferbefehl '{action_type}' fehlgeschlagen!")
 #======Get Hum Data======
 
 class get_Hum_mertics:
@@ -365,7 +370,7 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         # return 'succeeded_with_HD'
-
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
@@ -382,14 +387,14 @@ class MHold(smach.State):
         smach.State.__init__(self, outcomes=['succeeded'])
         self.robot_control = robot_control
     def execute(self, userdata):
-        rospy.loginfo('Executing state: M1Hold')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
                 
 class MHoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
         self.robot_control = robot_control
     def execute(self, userdata):
-        rospy.loginfo('Executing state: M1HoldHD')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ####
         #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
         ''''DEBUG BLOCK ZUM TESTEN'''
@@ -416,7 +421,7 @@ class MPositioning(smach.State):
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
-        rospy.loginfo('Executing state: M1Positioning')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         self.counter += 1
         if (self.counter % 4==0):
             return 'succeeded_to_PCB'
@@ -435,7 +440,7 @@ class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'])
     def execute(self, userdata):
-        rospy.loginfo('Executing state: PCB1PickUpAndPositioning')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         return 'succeeded'
 
 class PCB2PickUpAndPositioning(smach.State):
@@ -443,7 +448,7 @@ class PCB2PickUpAndPositioning(smach.State):
         smach.State.__init__(self, outcomes=['succeeded'])
 
     def execute(self, userdata):
-        rospy.loginfo('Executing state: PCB2PickUpAndPositioning')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ####
         return 'succeeded'
 
@@ -452,7 +457,7 @@ class CopperFixing1To6(smach.State):
         smach.State.__init__(self, outcomes=['succeeded'])
 
     def execute(self, userdata):
-        rospy.loginfo('Executing state: CopperFixing1To6')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ####
         return 'succeeded'
 
@@ -471,7 +476,7 @@ class BatteryFixing(smach.State):
         self.counter = 0
 
     def execute(self, userdata):
-        rospy.loginfo('Executing state: BatteryFixing')
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         self.counter += 1
         if(self.counter <= 4):
             return 'succeeded'

@@ -68,39 +68,32 @@ roslaunch realsense2_camera rs_aligned_depth.launch
 
 source /home/ca/catkin_ws/devel/setup.bash
 
-rosrun schledluer schledluer_ros.py
+rosrun scheduler schledluer_ros.py
 
 #Robot Control
 
 source /home/ca/catkin_ws/devel/setup.bash
 
-chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
+chmod +x /home/ca/catkin_ws/src/schledluer/src/scheduler.py
 
-rosrun schledluer smach_ros_moveit.py
+rosrun schledluer scheduler.py
 
-#Intel Realsense Control links
-
-source /home/ca/catkin_ws/devel/setup.bash
-
-chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking_left.py
-
-rosrun schledluer tracking_left.py
 
 #Intel Realsense Control rechts
 
 source /home/ca/catkin_ws/devel/setup.bash
 
-chmod +x /home/ca/catkin_ws/src/schledluer/src/Shoulder_Tracking_ros.py
+chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking.py
 
-rosrun schledluer Shoulder_Tracking_ros.py
+rosrun schledluer tracking.py
 
 #Get koords
 
 source /home/ca/catkin_ws/devel/setup.bash
 
-chmod +x /home/ca/catkin_ws/src/schledluer/src/schledluer_ros_with_karth.py
+chmod +x /home/ca/catkin_ws/src/schledluer/src/get_robo_poses.py
 
-rosrun schledluer schledluer_ros_with_karth.py
+rosrun schledluer get_robo_poses.py
 
 #Übergabe Debug
 

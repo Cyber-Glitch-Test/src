@@ -5,7 +5,7 @@ import rospy # type: ignore
 import moveit_commander # type: ignore
 import sys
 import smach # type: ignore
-import smach_ros
+import smach_ros # type: ignore
 import tf   # type: ignore
 import math
 import copy

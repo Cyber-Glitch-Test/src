@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
-import numpy as np
-import rospy
-import moveit_commander
+import numpy as np # type: ignore
+import rospy # type: ignore
+import moveit_commander # type: ignore
 import sys
-import smach
+import smach # type: ignore
 import smach_ros
-import tf
+import tf   # type: ignore
 import math
 import copy
-from geometry_msgs.msg import Pose, PoseStamped
-from moveit_msgs.msg import Grasp, PlaceLocation
-from moveit_commander.move_group import MoveGroupCommander
-from moveit_commander import PlanningSceneInterface
-from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg
-from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg
+from geometry_msgs.msg import Pose, PoseStamped # type: ignore
+from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
+from moveit_commander.move_group import MoveGroupCommander # type: ignore
+from moveit_commander import PlanningSceneInterface # type: ignore
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg # type: ignore
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
 
 #======Konstanten====== 
 #Konstanten für Roboterposen (Quaternionen)

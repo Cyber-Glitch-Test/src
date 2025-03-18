@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-import rospy
-import tf
-import pyrealsense2 as rs
-import mediapipe as mp
-import cv2
-import numpy as np
+import rospy # type: ignore
+import tf  # type: ignore
+import pyrealsense2 as rs  # type: ignore
+import mediapipe as mp  # type: ignore
+import cv2  # type: ignore
+import numpy as np  # type: ignore
 import math
-from geometry_msgs.msg import PointStamped
-from tf.transformations import quaternion_from_euler
-from filterpy.kalman import KalmanFilter
-from std_srvs.srv import Empty
+from geometry_msgs.msg import PointStamped  # type: ignore
+from tf.transformations import quaternion_from_euler  # type: ignore
+from filterpy.kalman import KalmanFilter  # type: ignore
+from std_srvs.srv import Empty  # type: ignore
 class KalmanFilter3D:
     def __init__(self, dt=0.033, process_noise=1e-4, measurement_noise=1e-1):
         self.kf = KalmanFilter(dim_x=6, dim_z=3)  # 6 Zustände (Position + Geschwindigkeit für x, y, z), 3 Messungen (x, y, z)
@@ -188,6 +188,7 @@ while not rospy.is_shutdown():
         y_world_right_hand  = (y_right_hand  - cy) * z_right_hand  / fy
 
         #Kalman Filter für Schulter, Elbogen und Hand
+        
         #shoulder_trans_kf = kf_shoulder.update([x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder])
         #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
         #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])

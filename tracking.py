@@ -11,63 +11,27 @@ from geometry_msgs.msg import PointStamped  # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
 from filterpy.kalman import KalmanFilter  # type: ignore
 from std_srvs.srv import Empty  # type: ignore
-class KalmanFilter3D:
-    def __init__(self, dt=0.033, process_noise=1e-4, measurement_noise=1e-1):
-        self.kf = KalmanFilter(dim_x=6, dim_z=3)  # 6 Zustände (Position + Geschwindigkeit für x, y, z), 3 Messungen (x, y, z)
-        
-        # Zustandsübergangsmatrix
-        self.kf.F = np.array([[1, dt, 0,  0,  0,  0],  
-                              [0,  1, 0,  0,  0,  0],
-                              [0,  0, 1, dt,  0,  0],
-                              [0,  0, 0,  1,  0,  0],
-                              [0,  0, 0,  0,  1, dt],
-                              [0,  0, 0,  0,  0,  1]])
 
-        # Messmatrix
-        self.kf.H = np.array([[1, 0, 0, 0, 0, 0],  
-                              [0, 0, 1, 0, 0, 0],  
-                              [0, 0, 0, 0, 1, 0]])
+def create_kalman_filter():
+    kf = KalmanFilter(dim_x=6, dim_z=3)
+    kf.F = np.array([[1, 0, 0, 1, 0, 0],  
+                      [0, 1, 0, 0, 1, 0],  
+                      [0, 0, 1, 0, 0, 1],  
+                      [0, 0, 0, 1, 0, 0],  
+                      [0, 0, 0, 0, 1, 0],  
+                      [0, 0, 0, 0, 0, 1]])
+    kf.H = np.array([[1, 0, 0, 0, 0, 0],  
+                      [0, 1, 0, 0, 0, 0],  
+                      [0, 0, 1, 0, 0, 0]])
+    kf.P *= 700  # Initial hohe Unsicherheit
+    kf.R = np.eye(3) * 0.1  # Messrauschen
+    kf.Q = np.eye(6) * 0.1  # Prozessrauschen
+    kf.x = np.zeros((6, 1))  # Anfangszustand
+    return kf
 
-        # Prozessrauschen
-        self.kf.Q = np.eye(6) * process_noise
-
-        # Messrauschen
-        self.kf.R = np.eye(3) * measurement_noise
-
-        # Kovarianzmatrix
-        self.kf.P = np.diag([100, 10, 100, 10, 100, 10])
-
-        # Anfangszustand
-        self.kf.x = np.zeros((6, 1))
-
-        # Zeitstempel für dt-Berechnung
-        self.last_time = rospy.Time.now()
-
-    def update(self, measurement):
-        """Aktualisiert den Kalman-Filter mit einer neuen Messung."""
-        current_time = rospy.Time.now()
-        dt = (current_time - self.last_time).to_sec()
-        self.last_time = current_time
-
-        # Aktualisiere die Zustandsübergangsmatrix mit dem neuen dt
-        self.kf.F = np.array([[1, dt, 0,  0,  0,  0],  
-                              [0,  1, 0,  0,  0,  0],
-                              [0,  0, 1, dt,  0,  0],
-                              [0,  0, 0,  1,  0,  0],
-                              [0,  0, 0,  0,  1, dt],
-                              [0,  0, 0,  0,  0,  1]])
-
-        z = np.array(measurement).reshape(3, 1)  # Messung (x, y, z)
-        self.kf.predict()
-        self.kf.update(z)
-
-        # Debugging-Ausgaben
-        rospy.loginfo(f"Geschätzte Position: {self.kf.x[:3].flatten()}")
-        rospy.loginfo(f"Geschätzte Geschwindigkeit: {self.kf.x[1::2].flatten()}")
-        rospy.loginfo(f"Kovarianzmatrix: {self.kf.P}")
-
-        return self.kf.x[:3].flatten()  # Gibt die gefilterte Position zurück (x, y, z)
-
+kf_shoulder = create_kalman_filter()
+kf_elbow = create_kalman_filter()
+kf_hand = create_kalman_filter()
 
 # Set up your ROS node and TransformBroadcaster
 rospy.init_node('Stereo_Cam')
@@ -76,11 +40,6 @@ broadcaster = tf.TransformBroadcaster()
 translation = (-0.25, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
 rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
-
-# Kalman-Filter für Schulter, Ellbogen und Hand erstellen
-kf_shoulder = KalmanFilter3D()
-kf_elbow = KalmanFilter3D()
-kf_hand = KalmanFilter3D()
 
 # Initialisierte Realsense Kamera
 realsense_ctx = rs.context()
@@ -101,7 +60,7 @@ mpDraw = mp.solutions.drawing_utils
 # Configure your Realsense Camera stream
 config.enable_device(device)
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8,30)
 profile = pipeline.start(config)
 
 align_to = rs.stream.color
@@ -174,6 +133,7 @@ while not rospy.is_shutdown():
         z_right_shoulder  = right_shoulder_distance
         x_world_right_shoulder  = (x_right_shoulder  - cx) * z_right_shoulder  / fx
         y_world_right_shoulder  = (y_right_shoulder  - cy) * z_right_shoulder  / fy
+        rospy.loginfo(f"schulter position in Pcam{x_world_right_shoulder,x_world_right_shoulder, y_world_right_shoulder}")
 
         # Calculate the 3D position of the right elbow
         right_elbow_distance = depth_image[y_right_elbow , x_right_elbow ] * depth_scale
@@ -192,11 +152,26 @@ while not rospy.is_shutdown():
         #shoulder_trans_kf = kf_shoulder.update([x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder])
         #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
         #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])
-
-        shoulder_trans = [x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder]
-        elbow_trans = [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
-        hand_trans = [x_world_right_hand,y_world_right_hand,z_right_hand]
-
+        measurement_shoulder = np.array([[x_world_right_shoulder], [y_world_right_shoulder], [z_right_shoulder]])
+        measurement_elbow = np.array([[x_world_right_elbow], [y_world_right_elbow], [z_right_elbow]])
+        measurement_hand = np.array([[x_world_right_hand], [y_world_right_hand], [z_right_hand]])
+        
+        # Vorhersage und Update des Kalman-Filters
+        kf_shoulder.predict()
+        kf_shoulder.update(measurement_shoulder)
+        shoulder_trans = kf_shoulder.x[:3].flatten()
+        
+        kf_elbow.predict()
+        kf_elbow.update(measurement_elbow)
+        elbow_trans = kf_elbow.x[:3].flatten()
+        
+        kf_hand.predict()
+        kf_hand.update(measurement_hand)
+        hand_trans = kf_hand.x[:3].flatten()
+        # shoulder_trans = [x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder]
+        # elbow_trans = [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
+        # hand_trans = [x_world_right_hand,y_world_right_hand,z_right_hand]
+        #if not (sum(shoulder_trans)==0):
         # Create a PointStamped message for the right shoulder in camera frame
         right_shoulder_point = PointStamped()
         right_shoulder_point.header.frame_id = "camera_link"
@@ -204,16 +179,16 @@ while not rospy.is_shutdown():
         right_shoulder_point.point.x = -shoulder_trans[0]    
         right_shoulder_point.point.y = shoulder_trans[2]
         right_shoulder_point.point.z = shoulder_trans[1]
-
-        # Create a PointStamped message for the right elbow in camera frame
+        #if not all(x == 0 for x in elbow_trans):
+            # Create a PointStamped message for the right elbow in camera frame
         right_elbow_point = PointStamped()
         right_elbow_point.header.frame_id = "camera_link"
         right_elbow_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
         right_elbow_point.point.x = -elbow_trans[0]  
         right_elbow_point.point.y = elbow_trans[2]  
         right_elbow_point.point.z = elbow_trans[1]  
-
-        # Create a PointStamped message for the right hand in camera frame
+        #if not all(x == 0 for x in hand_trans):
+            # Create a PointStamped message for the right hand in camera frame
         right_hand_point = PointStamped()
         right_hand_point.header.frame_id = "camera_link"
         right_hand_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel

@@ -148,8 +148,10 @@ class RobotControl:
 
             rospy.loginfo("Schulter erkannt")
             hand_over_position_x = -hm.shoulderkoords[0]
-            hand_over_position_y = -(hm.shoulderkoords[1] + (forearmlenghdin + tcp_coversion))
-            hand_over_position_z = (hm.shoulderkoords[2] - upperarmlenghtdin)
+            hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
+            hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
+            hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+           
             hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398]))
 
 

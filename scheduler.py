@@ -53,9 +53,9 @@ rb_arm_on_battery =[np.array([0.6011670779056063, -0.019193581297668794, 0.17018
 #Konstanten für ergonomische Berechnungen
 forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
-tcp_coversion = 0.35
-savety_koord_1 = np.array([0.2, 0.26, 0.8])
-savety_koord_2 = np.array([-0.2, 0.5, 0.3])
+tcp_coversion = 0.2
+savety_koord_1 = np.array([0.2, 0.0, 0.6])
+savety_koord_2 = np.array([-0.2, -0.5, 0.0])
 
 #======Robot Control Class======
 
@@ -198,7 +198,7 @@ class RobotControl:
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_start.position.y + 0.1
         if self.point_inside(handover_pose_end):
-            if not self.move_to_joint_goal( (3.0931, -2.3744, 1.9545, -1.0704, -0.0150, -1.6596), 5):
+            if not self.move_to_joint_goal( (-3.2750, -1.0030, -2.0312, -3.1267, -0.1795, 4.5501), 20):
                 return False
             if not self.move_to_target_carth(handover_pose_start,speed):
                 return False
@@ -222,19 +222,19 @@ class RobotControl:
                 hand_over_position_x = -hm.shoulderkoords[0]
                 hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
             elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
                 rospy.loginfo("Schulter, Ellbogen erkannt")
                 hand_over_position_x = -hm.shoulderkoords[0]
                 hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
             elif not(all(x == 0 for x in hm.shoulderkoords)):
                 rospy.loginfo("Schulter erkannt")
                 hand_over_position_x = -hm.shoulderkoords[0]
                 hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
                 hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.50235672552608, -0.4967601284126582, 0.5094375458540223, 0.49126416723834554]))
+                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
             else:
                 rospy.loginfo("Nichts erkannt")
                 hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
@@ -243,11 +243,12 @@ class RobotControl:
             broadcaster = tf.TransformBroadcaster()
             broadcaster.sendTransform(
                 (hand_over_position.position.x, hand_over_position.position.y, hand_over_position.position.z),  # Position der Übergabeposition
-                (0.017952569275050657, -0.750361039466253, 0.6606544978371074, 0.01310153407614398),  # Orientierung
+                (0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637),  # Orientierung
                 rospy.Time.now(),  # Zeitstempel
                 "Uebergabeposition Schulter",  # Child Frame
                 "base"  # Parent Frame
             )
+            hm= None
             return hand_over_position
         except Exception as e:
             rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
@@ -260,10 +261,14 @@ class RobotControl:
 
     def point_inside(self, pose):
         #Überprüft, ob die Übergabeposition innerhalb eines Sicherheitsrechtecks liegt
+
         point = [pose.position.x, pose.position.y, pose.position.z]
-        xmin, xmax = savety_koord_1[0] - 1, savety_koord_2[0] + 1
-        ymin, ymax = savety_koord_1[1] - 1, savety_koord_2[1] + 1
-        zmin, zmax = savety_koord_1[2] - 1, savety_koord_2[2] + 1
+        xmin, xmax = sorted([savety_koord_1[0], savety_koord_2[0]])
+        ymin, ymax = sorted([savety_koord_1[1], savety_koord_2[1]])
+        zmin, zmax = sorted([savety_koord_1[2], savety_koord_2[2]])
+        rospy.logwarn("Punkt:")
+        rospy.logwarn(point)
+        print(f"Checking point: {point}, Allowed Range: x[{xmin}, {xmax}], y[{ymin}, {ymax}], z[{zmin}, {zmax}]")
         return xmin < point[0] < xmax and ymin < point[1] < ymax and zmin < point[2] < zmax
     
     def pick_up(self,target):
@@ -364,12 +369,12 @@ robot_control = RobotControl("manipulator")
 
 class MPickUp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','succeeded_to_PCB'])
+        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
         #nehme Motor1 auf
-        # return 'succeeded_with_HD'
+        return 'succeeded_with_HD'
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
@@ -391,12 +396,12 @@ class MHold(smach.State):
                 
 class MHoldHD(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_end'])
         self.robot_control = robot_control
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ####
-        self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
+        #self.robot_control.move_to_joint_goal( (-1.1814, -1.9903, 2.2022, -0.1776, -4.3650, 4.7049), 5)
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
@@ -408,6 +413,7 @@ class MHoldHD(smach.State):
                 continue
             elif newuser == "n":
                 print("Exiting")
+                return 'succeeded_end'
                 break
         ''''DEBUG BLOCK ZUM TESTEN ENDE'''
         return 'succeeded'
@@ -417,7 +423,7 @@ class MHoldHD(smach.State):
 
 class MPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB'])
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
@@ -428,13 +434,6 @@ class MPositioning(smach.State):
         else:
             return 'succeeded'
 
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
-
-    def execute(self, userdata):
-        rospy.loginfo('Executing state: M4Positioning')
-        ####
-        return 'succeeded'
 
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -463,7 +462,7 @@ class CopperFixing1To6(smach.State):
 
 class BatteryPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_end'])
 
     def execute(self, userdata):
         rospy.loginfo('Executing state: BatteryPositioning')
@@ -500,7 +499,8 @@ if __name__ == "__main__":
         smach.StateMachine.add('MHold', MHold(),
                                transitions={'succeeded':'MPositioning'})
         smach.StateMachine.add('MHoldHD', MHoldHD(),
-                               transitions={'succeeded':'MPositioning'})
+                               transitions={'succeeded':'MPositioning',
+                                            'succeeded_end':'finished'})
         smach.StateMachine.add('MPositioning', MPositioning(),
                                transitions={'succeeded':'MPickUp',
                                             'succeeded_to_PCB':'PCB1PickUpAndPositioning'})

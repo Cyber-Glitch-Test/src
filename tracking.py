@@ -71,10 +71,10 @@ class KalmanFilter3D:
 
 # Set up your ROS node and TransformBroadcaster
 rospy.init_node('Stereo_Cam')
-rospy.Service('/shoulder_tracking_service', Empty, lambda req: None)
+#rospy.Service('/shoulder_tracking_service', Empty, lambda req: None)
 broadcaster = tf.TransformBroadcaster()
-translation = (-0.1, -0.13, 0.84)  # Position der Kamera im Weltkoordinatensystem X/Y/Z
-rotation = quaternion_from_euler(((-19/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
+translation = (-0.25, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
+rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
 # Kalman-Filter für Schulter, Ellbogen und Hand erstellen

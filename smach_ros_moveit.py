@@ -339,6 +339,7 @@ class M1PickUp(smach.State):
         #nehme Motor1 auf
         rospy.loginfo('Executing state: M1PickUp')
         # return 'succeeded_with_HD'
+        return 'succeeded_with_HD'
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
@@ -400,7 +401,7 @@ class M1HoldHD(smach.State):
     def execute(self, userdata):
         rospy.loginfo('Executing state: M1HoldHD')
         ####
-        #self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
+        self.robot_control.move_to_joint_goal( (1.9268, -1.4306, -2.6785, 0.8303, 1.2253, 0.0456), 5)
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')

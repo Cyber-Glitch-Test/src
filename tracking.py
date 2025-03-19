@@ -233,7 +233,7 @@ while not rospy.is_shutdown():
         # Warte auf die TF-Daten
         try:
             # Warte auf die Transformation mit dem richtigen Zeitstempel
-            listener.waitForTransform("base", "camera_link", right_shoulder_point.header.stamp, rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_shoulder_point)
 
             # Publish the transformed point
@@ -246,7 +246,7 @@ while not rospy.is_shutdown():
             )
 
             # Warte auf die Transformation mit dem richtigen Zeitstempel
-            listener.waitForTransform("base", "camera_link", right_elbow_point.header.stamp, rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_elbow_point)
 
             # Publish the transformed point
@@ -259,7 +259,7 @@ while not rospy.is_shutdown():
             )
 
             # Warte auf die Transformation mit dem richtigen Zeitstempel
-            listener.waitForTransform("base", "camera_link", right_hand_point.header.stamp, rospy.Duration(1.0))
+            listener.waitForTransform("base", "camera_link", rospy.Time(0), rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_hand_point)
 
             # Publish the transformed point

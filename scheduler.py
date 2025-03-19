@@ -9,6 +9,7 @@ import smach_ros # type: ignore
 import tf   # type: ignore
 import math
 import copy
+import time
 from geometry_msgs.msg import Pose, PoseStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
 from moveit_commander.move_group import MoveGroupCommander # type: ignore
@@ -210,34 +211,34 @@ class RobotControl:
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten
+
         try:
             hand_over_position = Pose()
             hm = get_Hum_mertics()
-
-            if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):
-                rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
-                rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
-                rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
-
-                hand_over_position_x = -hm.shoulderkoords[0]
-                hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
-                hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
-            elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
-                rospy.loginfo("Schulter, Ellbogen erkannt")
-                hand_over_position_x = -hm.shoulderkoords[0]
-                hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
-                hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
-            elif not(all(x == 0 for x in hm.shoulderkoords)):
-                rospy.loginfo("Schulter erkannt")
-                hand_over_position_x = -hm.shoulderkoords[0]
-                hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
-                hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
-                hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
-            else:
-                rospy.loginfo("Nichts erkannt")
-                hand_over_position = self.convert_to_pose(rb_arm_on_hum_static)
+            for sek in range(10):
+                if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):
+                    rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
+                    rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
+                    rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
+                    hand_over_position_x = -hm.shoulderkoords[0]
+                    hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
+                    hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
+                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+                elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
+                    rospy.loginfo("Schulter, Ellbogen erkannt")
+                    hand_over_position_x = -hm.shoulderkoords[0]
+                    hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
+                    hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
+                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+                elif not(all(x == 0 for x in hm.shoulderkoords)):
+                    rospy.loginfo("Schulter erkannt")
+                    hand_over_position_x = -hm.shoulderkoords[0]
+                    hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
+                    hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
+                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+                else:
+                    rospy.loginfo(f"Versuch: {sek}/10")
+                    time.sleep(1)
 
             # Visualisiere die Übergabeposition in TF
             broadcaster = tf.TransformBroadcaster()

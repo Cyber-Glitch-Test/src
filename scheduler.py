@@ -10,7 +10,8 @@ import tf   # type: ignore
 import math
 import copy
 import time
-from geometry_msgs.msg import Pose, PoseStamped # type: ignore
+from tf.transformations import quaternion_from_euler  # type: ignore
+from geometry_msgs.msg import Pose, PoseStamped , PointStamped() # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
 from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
@@ -18,7 +19,9 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as out
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
 
 #======Konstanten====== 
-#Konstanten für Roboterposen (Quaternionen)
+#Konstanten für TCP-Ausrichtung
+tcp_to_hum = [0.5,0.5,-0.5,0.5]
+#Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
 
 rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
@@ -52,15 +55,26 @@ rb_arm_on_battery =[np.array([0.6011670779056063, -0.019193581297668794, 0.17018
 
 
 #Konstanten für ergonomische Berechnungen
-forearmlenghdin = 0.3335  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
+forearmlenghdin = 0.2688  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
+
+forearmlenghdin_max = 0.355
+forearmlenghdin_min = 0.187
+
+upperarmlenghtdin_max = 0.405
+upperarmlenghtdin_min = 0.285
+
 tcp_coversion = 0.2
+
+
+
 savety_koord_1 = np.array([0.2, 0.0, 0.6])
 savety_koord_2 = np.array([-0.2, -0.5, 0.0])
 
 #======Robot Control Class======
 
 class RobotControl:
+    
     def __init__(self, group_name):
         #Initialisiert die MoveIt-Gruppe und die Greifer-Node
         self.group_name = group_name
@@ -76,28 +90,28 @@ class RobotControl:
         rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
         Tisch = PoseStamped()
-        Tisch.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Tisch.header.frame_id = planning_frame
         Tisch.pose.position.x = 0.0
         Tisch.pose.position.y = 0.0
-        Tisch.pose.position.z = -0.09  # Etwas unter dem Boden
+        Tisch.pose.position.z = -0.09 
         
         self.scene.add_box("Tisch", Tisch, size=(3, 2, 0.05))
         rospy.loginfo("Tisch wurde Planungszene hinzugefügt.")
 
         Wand = PoseStamped()
-        Wand.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Wand.header.frame_id = planning_frame 
         Wand.pose.position.x = -0.37
         Wand.pose.position.y = 0.00
-        Wand.pose.position.z = 0.00  # Etwas unter dem Boden
+        Wand.pose.position.z = 0.00 
         
         self.scene.add_box("Wand", Wand, size=(0.05, 3, 3))
         rospy.loginfo("Wand wurde Planungszene hinzugefügt")
 
         Decke = PoseStamped()
-        Decke.header.frame_id = planning_frame  # Setze den Planungsrahmen als Referenz
+        Decke.header.frame_id = planning_frame  
         Decke.pose.position.x = 0.0
         Decke.pose.position.y = 0.0
-        Decke.pose.position.z = 0.92  # Etwas unter dem Boden
+        Decke.pose.position.z = 0.92 
         
         self.scene.add_box("Decke", Decke, size=(3, 2, 0.05))
         rospy.loginfo("Decke wurde Planungszene hinzugefügt.")
@@ -105,12 +119,11 @@ class RobotControl:
         eef_link = self.move_group.get_end_effector_link()
         rospy.loginfo("Endeffektor-Link: %s", eef_link)
 
-        # Setze die maximale Geschwindigkeit und Beschleunigung
         self.move_group.set_max_velocity_scaling_factor(0.1)
         self.move_group.set_max_acceleration_scaling_factor(0.1)
 
     def convert_to_pose(self, koords):
-        #Konvertiert ein 1x7-Array in eine MoveIt-Pose
+        #Konvertiert ein 1x7-Array in eine Pose
         target_pose = Pose()
         target_pose.position.x = koords[0]
         target_pose.position.y = koords[1]
@@ -120,6 +133,18 @@ class RobotControl:
         target_pose.orientation.z = koords[5]
         target_pose.orientation.w = koords[6]
         return target_pose
+    
+    def convert_to_pose(self, pose= Pose()):
+        #Konvertiert eine Pose in ein 1x7-Array
+        koords = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        koords[0] = pose.position.x
+        koords[1] = pose.position.y
+        koords[2] = pose.position.z
+        koords[3] = pose.orientation.x
+        koords[4] = pose.orientation.y
+        koords[5] = pose.orientation.z
+        koords[6] = pose.orientation.w
+        return koords
 
     def move_to_target(self, target_pose, speed):
         #Bewegt den Roboter zu einer Zielpose
@@ -161,15 +186,15 @@ class RobotControl:
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         for i, waypoint in enumerate(waypoints):
             self.move_group.set_pose_target(waypoint)
-            plan = self.move_group.plan()  # Plane die Bewegung zu diesem Waypoint
-            if plan[0]:  # Plan existiert?
+            plan = self.move_group.plan()  
+            if plan[0]:  
                 rospy.loginfo(f"Führe Waypoint {i+1} aus...")
-                self.move_group.execute(plan[1], wait=True)  # Führe den Plan aus
+                self.move_group.execute(plan[1], wait=True) 
             else:
                 rospy.logwarn(f"Konnte Waypoint {i+1} nicht erreichen!")
 
     def move_to_joint_goal(self, joint_goal, speed):
-        #Bewegt den Roboter zu einem definierten Gelenkwinkel
+        #Bewegt den Roboter zu einem Gelenkwinkel
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         success = self.move_group.go(joint_goal, wait=True)
         if success:
@@ -193,11 +218,13 @@ class RobotControl:
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
     def handover_to_hum(self,speed):
+
         #führe die Roboter bewegung zum Menschen aus
         handover_pose_end = Pose()
         handover_pose_end = self.calc_handover_position_schoulder()
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_start.position.y + 0.1
+        
         if self.point_inside(handover_pose_end):
             if not self.move_to_joint_goal( (-3.2750, -1.0030, -2.0312, -3.1267, -0.1795, 4.5501), 20):
                 return False
@@ -210,51 +237,61 @@ class RobotControl:
             return False
 
     def calc_handover_position_schoulder(self):
-        #Berechnet die ergonomische Übergabeposition basierend auf Schulterkoordinaten
-
-        try:
-            hand_over_position = Pose()
+        #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
             hm = get_Hum_mertics()
+            broadcaster = tf.TransformBroadcaster()
+            listener = tf.TransformListener()  
+
             for sek in range(10):
-                if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):
+                if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)) and hm.inside_norm_upper and hm.inside_norm_fore:
+                    
                     rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
                     rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
                     rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
-                    hand_over_position_x = -hm.shoulderkoords[0]
-                    hand_over_position_y = -(hm.shoulderkoords[1] - (hm.forearmlenght + tcp_coversion))
-                    hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z,0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
-                elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
+
+                    translation = [ 0,- (hm.forearmlenght + tcp_coversion),- hm.uperarmlenght]
+                    rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
+                    break
+
+                elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and hm.inside_norm_upper:
+                    
                     rospy.loginfo("Schulter, Ellbogen erkannt")
-                    hand_over_position_x = -hm.shoulderkoords[0]
-                    hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
-                    hand_over_position_z = hm.shoulderkoords[2] - hm.uperarmlenght
-                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+                    rospy.loginfo("Oberarmlänge: %s", hm.uperarmlenght)
+
+                    translation = [ 0,- (forearmlenghdin + tcp_coversion),- hm.uperarmlenght]
+                    rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
+                    break
+
                 elif not(all(x == 0 for x in hm.shoulderkoords)):
                     rospy.loginfo("Schulter erkannt")
-                    hand_over_position_x = -hm.shoulderkoords[0]
-                    hand_over_position_y = -(hm.shoulderkoords[1] - (forearmlenghdin + tcp_coversion))
-                    hand_over_position_z = hm.shoulderkoords[2] - upperarmlenghtdin
-                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_x, hand_over_position_y, hand_over_position_z, 0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637]))
+                    translation = [ 0,- (forearmlenghdin + tcp_coversion),- upperarmlenghtdin]
+                    rotation = quaternion_from_euler(((0/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi))
+                    break
+
                 else:
-                    rospy.loginfo(f"Versuch: {sek}/10")
+                    rospy.loginfo(f"Nichts erkannt Versuch: {sek}/10")
                     time.sleep(1)
 
-            # Visualisiere die Übergabeposition in TF
-            broadcaster = tf.TransformBroadcaster()
-            broadcaster.sendTransform(
-                (hand_over_position.position.x, hand_over_position.position.y, hand_over_position.position.z),  # Position der Übergabeposition
-                (0.4940377021038103, 0.5228192716826835, -0.483399996859536, 0.4989100130217637),  # Orientierung
-                rospy.Time.now(),  # Zeitstempel
-                "Uebergabeposition Schulter",  # Child Frame
-                "base"  # Parent Frame
-            )
-            hm= None
-            return hand_over_position
-        except Exception as e:
-            rospy.logwarn("HD fehlgeschlagen. Fehler: %s", e)
-            return self.convert_to_pose(rb_arm_on_hum_static)
+                try:
+                    broadcaster.sendTransform(
+                    translation,  
+                    rotation,    
+                    rospy.Time.now(), 
+                    "handover_position",  
+                    "right_shoulder"         
+                    )
 
+                    time.sleep(3)
+                    listener.waitForTransform("base_link","handover_position", rospy.Time(0), rospy.Duration(1.0))
+                    hand_over_position_koords, _ = listener.lookupTransform("base_link","handover_position",  rospy.Time(0))
+                    hand_over_position = self.convert_to_pose(np.array([hand_over_position_koords,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3]]))
+
+                except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+                    rospy.logwarn(f"Error transforming point: {e}")
+            
+            hm = None
+            return hand_over_position
+        
     def reset_robot(self):
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
@@ -321,11 +358,13 @@ class GripperController:
 class get_Hum_mertics:
     #innitiere tracking des Menschen
     def __init__(self):
-        self.uperarmlenght = 0
-        self.forearmlenght = 0
-        self.shoulderkoords = [0, 0, 0]
-        self.elbowkoords = [0, 0, 0]
-        self.handkoords = [0, 0, 0]
+        self.uperarmlenght = 0.0
+        self.forearmlenght = 0.0
+        self.shoulderkoords = [0.0, 0.0, 0.0]
+        self.elbowkoords =    [0.0, 0.0, 0.0]
+        self.handkoords =     [0.0, 0.0, 0.0]
+        self.inside_norm_upper = True
+        self.inside_norm_fore  = True
         self.calc_arm_lenght()
 
     def camera_listener(self):
@@ -348,21 +387,40 @@ class get_Hum_mertics:
             self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
     #bestimme ober und unterarm länge
+
         self.camera_listener()
         self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
         self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
+        self.is_inside_norm()
 
     def calc_euclidean_distance(self, point1, point2):
     #bestimme den euclidischen Abstand zwischen zwei Punkten
+
         distance = 0.0
         for i in range(len(point1)):
             distance += (point2[i] - point1[i]) ** 2
         return math.sqrt(distance)
+    
+    def is_inside_norm(self):
+        #Überprüft ob Ober und Unterarm innerhalb des 5. und 95 Perzentil sind
+
+        if (self.uperarmlenght <= upperarmlenghtdin_max) and (self.uperarmlenght >= upperarmlenghtdin_min):
+            self.inside_norm_upper = True
+        else:
+            rospy.logwarn(f"Oberarmmaße sind außerhalb 5. bis 95 Perzentil")
+            self.inside_norm_upper = False
+
+        if(self.forearmlenght <= forearmlenghdin_max) and (self.forearmlenght <= forearmlenghdin_min):
+            self.inside_norm_fore = True
+        else:
+            rospy.logwarn(f"Unterarmmaße sind außerhalb 5. bis 95 Perzentil")
+            self.inside_norm_fore = False
+
+        
 
 robot_control = RobotControl("manipulator")
 
@@ -376,6 +434,7 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         return 'succeeded_with_HD'
+
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         ''''DEBUG BLOCK ZUM TESTEN'''
         while True:

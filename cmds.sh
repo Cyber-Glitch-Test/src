@@ -87,6 +87,15 @@ chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking.py
 
 rosrun schledluer tracking.py
 
+#Intel Realsense Control rechts
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking_test.py
+
+rosrun schledluer tracking_test.py
+
+
 #Get koords
 
 source /home/ca/catkin_ws/devel/setup.bash

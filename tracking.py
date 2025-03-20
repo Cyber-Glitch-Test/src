@@ -21,6 +21,8 @@ translation = (-0.30, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensys
 rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
+def calc_midPoint(x1,x2,y1,y2,z1,z2):  
+  return ((x1 + x2)/2, (y1 + y2)/2,(z1+z2)/2)
 
 
 # Initialisierte Realsense Kamera
@@ -82,14 +84,42 @@ while not rospy.is_shutdown():
     if results.pose_landmarks:
         mpDraw.draw_landmarks(color_image, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
 
-        right_shoulder_landmark = results.pose_landmarks.landmark[11]
+        #links
+
+        left_shoulder_landmark = results.pose_landmarks.landmark[11]
+        x_left_shoulder = int(left_shoulder_landmark.x * color_image.shape[1])
+        y_left_shoulder = int(left_shoulder_landmark.y * color_image.shape[0])
+
+        x_left_shoulder = max(0, min(x_left_shoulder, color_image.shape[1] - 1))
+        y_left_shoulder = max(0, min(y_left_shoulder, color_image.shape[0] - 1))
+
+        left_elbow_landmark = results.pose_landmarks.landmark[13]
+        x_left_elbow = int(left_elbow_landmark.x * color_image.shape[1])
+        y_left_elbow = int(left_elbow_landmark.y * color_image.shape[0])
+
+
+        x_left_elbow = max(0, min(x_left_elbow, color_image.shape[1] - 1))
+        y_left_elbow = max(0, min(y_left_elbow, color_image.shape[0] - 1))
+
+
+        left_hand_landmark = results.pose_landmarks.landmark[15]
+        x_left_hand = int(left_hand_landmark.x * color_image.shape[1])
+        y_left_hand = int(left_hand_landmark.y * color_image.shape[0])
+
+
+        x_left_hand = max(0, min(x_left_hand, color_image.shape[1] - 1))
+        y_left_hand = max(0, min(y_left_hand, color_image.shape[0] - 1))
+
+        #rechts
+
+        right_shoulder_landmark = results.pose_landmarks.landmark[12]
         x_right_shoulder = int(right_shoulder_landmark.x * color_image.shape[1])
         y_right_shoulder = int(right_shoulder_landmark.y * color_image.shape[0])
 
         x_right_shoulder = max(0, min(x_right_shoulder, color_image.shape[1] - 1))
         y_right_shoulder = max(0, min(y_right_shoulder, color_image.shape[0] - 1))
 
-        right_elbow_landmark = results.pose_landmarks.landmark[13]
+        right_elbow_landmark = results.pose_landmarks.landmark[14]
         x_right_elbow = int(right_elbow_landmark.x * color_image.shape[1])
         y_right_elbow = int(right_elbow_landmark.y * color_image.shape[0])
 
@@ -98,7 +128,7 @@ while not rospy.is_shutdown():
         y_right_elbow = max(0, min(y_right_elbow, color_image.shape[0] - 1))
 
 
-        right_hand_landmark = results.pose_landmarks.landmark[15]
+        right_hand_landmark = results.pose_landmarks.landmark[16]
         x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
         y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
 
@@ -107,6 +137,21 @@ while not rospy.is_shutdown():
         y_right_hand = max(0, min(y_right_hand, color_image.shape[0] - 1))
 
         #Brechne die Poisition von  Schulter, Elbogen und Hand mittels Intrinsics der Kamera
+        left_shoulder_distance = depth_image[y_left_shoulder , x_left_shoulder ] * depth_scale
+        z_left_shoulder  = left_shoulder_distance
+        x_world_left_shoulder  = (x_left_shoulder  - cx) * z_left_shoulder  / fx
+        y_world_left_shoulder  = (y_left_shoulder  - cy) * z_left_shoulder  / fy
+
+        left_elbow_distance = depth_image[y_left_elbow , x_left_elbow ] * depth_scale
+        z_left_elbow  = left_elbow_distance
+        x_world_left_elbow  = (x_left_elbow  - cx) * z_left_elbow  / fx
+        y_world_left_elbow  = (y_left_elbow  - cy) * z_left_elbow  / fy
+
+        left_hand_distance = depth_image[y_left_hand , x_left_hand ] * depth_scale
+        z_left_hand  = left_hand_distance
+        x_world_left_hand  = (x_left_hand  - cx) * z_left_hand  / fx
+        y_world_left_hand  = (y_left_hand  - cy) * z_left_hand  / fy
+
         right_shoulder_distance = depth_image[y_right_shoulder , x_right_shoulder ] * depth_scale
         z_right_shoulder  = right_shoulder_distance
         x_world_right_shoulder  = (x_right_shoulder  - cx) * z_right_shoulder  / fx
@@ -128,10 +173,9 @@ while not rospy.is_shutdown():
         #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
         #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])
 
-        shoulder_trans = [x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder]
-        elbow_trans = [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
-        hand_trans = [x_world_right_hand,y_world_right_hand,z_right_hand]
-
+        shoulder_trans = calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
+        elbow_trans = calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
+        hand_trans = calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
         #Erstelle punkte für den Publisher
         right_shoulder_point = PointStamped()
         right_shoulder_point.header.frame_id = "camera_link"

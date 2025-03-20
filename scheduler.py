@@ -69,7 +69,7 @@ tcp_coversion = 0.2
 
 
 
-savety_koord_1 = np.array([0.3, 0.0, 0.6])
+savety_koord_1 = np.array([0.25, 0.0, 0.6])
 savety_koord_2 = np.array([-0.3, -0.7, 0.0])
 
 #======Robot Control Class======
@@ -463,7 +463,7 @@ class MPickUp(smach.State):
                 self.gripper_controller.send_gripper_command('activate')
                 self.gripper_controller.send_gripper_command('close')
                 self.gripper_controller.send_gripper_command('open')
-                robot_control.pick_up(rb_arm_on_m[15])
+                robot_control.pick_up(rb_arm_on_m[self.counter])
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
                 return 'succeeded_with_HD'

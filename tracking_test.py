@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import random
 import rospy # type: ignore
 import tf  # type: ignore
 import pyrealsense2 as rs  # type: ignore
@@ -80,127 +80,36 @@ rate = rospy.Rate(30)  # 30 Hz
 listener = tf.TransformListener()  # TransformListener initialisieren
 
 while not rospy.is_shutdown():
-    frames = pipeline.wait_for_frames()
-    aligned_frames = align.process(frames)
-    aligned_depth_frame = aligned_frames.get_depth_frame()
-    color_frame = aligned_frames.get_color_frame()
 
-    if not aligned_depth_frame or not color_frame:
-        continue
-
-    # Convert frames to numpy arrays
-    depth_image = np.asanyarray(aligned_depth_frame.get_data())
-    #depth_image = cv2.flip(depth_image,-1)
-    color_image = np.asanyarray(color_frame.get_data())
-    #color_image = cv2.flip(color_image,-1)
-
-    # Process Pose using MediaPipe
-    color_image_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
-    results = pose.process(color_image_rgb)
-
-    if results.pose_landmarks:
-        mpDraw.draw_landmarks(color_image, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
-
-        # Get coordinates of the right shoulder (index 12)
-        right_shoulder_landmark = results.pose_landmarks.landmark[11]
-        x_right_shoulder = int(right_shoulder_landmark.x * color_image.shape[1])
-        y_right_shoulder = int(right_shoulder_landmark.y * color_image.shape[0])
-
-        # Ensure valid coordinates (clamp within image bounds)
-        x_right_shoulder = max(0, min(x_right_shoulder, color_image.shape[1] - 1))
-        y_right_shoulder = max(0, min(y_right_shoulder, color_image.shape[0] - 1))
-
-        # Get coordinates of the right elbow (index 14)
-        right_elbow_landmark = results.pose_landmarks.landmark[13]
-        x_right_elbow = int(right_elbow_landmark.x * color_image.shape[1])
-        y_right_elbow = int(right_elbow_landmark.y * color_image.shape[0])
-
-        # Ensure valid coordinates (clamp within image bounds)
-        x_right_elbow = max(0, min(x_right_elbow, color_image.shape[1] - 1))
-        y_right_elbow = max(0, min(y_right_elbow, color_image.shape[0] - 1))
-
-        # Get coordinates of the right hand (index 16)
-        right_hand_landmark = results.pose_landmarks.landmark[15]
-        x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
-        y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
-
-        # Ensure valid coordinates (clamp within image bounds)
-        x_right_hand = max(0, min(x_right_hand, color_image.shape[1] - 1))
-        y_right_hand = max(0, min(y_right_hand, color_image.shape[0] - 1))
-
-        # Calculate the 3D position of the right shoulder
-        right_shoulder_distance = depth_image[y_right_shoulder , x_right_shoulder ] * depth_scale
-        z_right_shoulder  = right_shoulder_distance
-        x_world_right_shoulder  = (x_right_shoulder  - cx) * z_right_shoulder  / fx
-        y_world_right_shoulder  = (y_right_shoulder  - cy) * z_right_shoulder  / fy
-        rospy.loginfo(f"schulter position in Pcam{x_world_right_shoulder,x_world_right_shoulder, y_world_right_shoulder}")
-
-        # Calculate the 3D position of the right elbow
-        right_elbow_distance = depth_image[y_right_elbow , x_right_elbow ] * depth_scale
-        z_right_elbow  = right_elbow_distance
-        x_world_right_elbow  = (x_right_elbow  - cx) * z_right_elbow  / fx
-        y_world_right_elbow  = (y_right_elbow  - cy) * z_right_elbow  / fy
-
-        # Calculate the 3D position of the right hand
-        right_hand_distance = depth_image[y_right_hand , x_right_hand ] * depth_scale
-        z_right_hand  = right_hand_distance
-        x_world_right_hand  = (x_right_hand  - cx) * z_right_hand  / fx
-        y_world_right_hand  = (y_right_hand  - cy) * z_right_hand  / fy
-
-        #Kalman Filter für Schulter, Elbogen und Hand
-        
-        #shoulder_trans_kf = kf_shoulder.update([x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder])
-        #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
-        #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])
-        measurement_shoulder = np.array([[x_world_right_shoulder], [y_world_right_shoulder], [z_right_shoulder]])
-        measurement_elbow = np.array([[x_world_right_elbow], [y_world_right_elbow], [z_right_elbow]])
-        measurement_hand = np.array([[x_world_right_hand], [y_world_right_hand], [z_right_hand]])
-        
-        # Vorhersage und Update des Kalman-Filters
-        kf_shoulder.predict()
-        kf_shoulder.update(measurement_shoulder)
-        shoulder_trans = kf_shoulder.x[:3].flatten()
-        
-        kf_elbow.predict()
-        kf_elbow.update(measurement_elbow)
-        elbow_trans = kf_elbow.x[:3].flatten()
-        
-        kf_hand.predict()
-        kf_hand.update(measurement_hand)
-        hand_trans = kf_hand.x[:3].flatten()
-        # shoulder_trans = [x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder]
-        # elbow_trans = [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
-        # hand_trans = [x_world_right_hand,y_world_right_hand,z_right_hand]
-        #if not (sum(shoulder_trans)==0):
-        # Create a PointStamped message for the right shoulder in camera frame
         right_shoulder_point = PointStamped()
         right_shoulder_point.header.frame_id = "camera_link"
         right_shoulder_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
-        right_shoulder_point.point.x = -shoulder_trans[0]    
-        right_shoulder_point.point.y = shoulder_trans[2]
-        right_shoulder_point.point.z = shoulder_trans[1]
+
         #if not all(x == 0 for x in elbow_trans):
             # Create a PointStamped message for the right elbow in camera frame
         right_elbow_point = PointStamped()
         right_elbow_point.header.frame_id = "camera_link"
         right_elbow_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
-        right_elbow_point.point.x = -elbow_trans[0]  
-        right_elbow_point.point.y = elbow_trans[2]  
-        right_elbow_point.point.z = elbow_trans[1]  
+ 
         #if not all(x == 0 for x in hand_trans):
             # Create a PointStamped message for the right hand in camera frame
         right_hand_point = PointStamped()
         right_hand_point.header.frame_id = "camera_link"
         right_hand_point.header.stamp = rospy.Time.now()  # Aktueller Zeitstempel
-        right_hand_point.point.x = -hand_trans[0]
-        right_hand_point.point.y = hand_trans[2]
-        right_hand_point.point.z = hand_trans[1]
+
 
         "zum testen feste Koords"
         right_shoulder_point.point.x = 0
-        right_shoulder_point.point.y = 1
-        right_shoulder_point.point.z = -0.5
+        right_shoulder_point.point.y = -0.5
+        right_shoulder_point.point.z = 0.5
 
+        right_elbow_point.point.x = 0
+        right_elbow_point.point.y = -0.5
+        right_elbow_point.point.z = 0.25
+
+        right_hand_point.point.x = 0
+        right_hand_point.point.y = -0.25
+        right_hand_point.point.z = -0.25
 
         # Veröffentliche den Frame "camera_link" im TF-Baum
         broadcaster.sendTransform(
@@ -256,10 +165,7 @@ while not rospy.is_shutdown():
             rospy.logwarn(f"Error transforming point: {e}")
 
     # Display image with pose landmarks
-    cv2.imshow("Pose Landmarks", cv2.flip(color_image,-1))
-    cv2.waitKey(1)
 
-    rate.sleep()
 
-# Stop the pipeline when done
-pipeline.stop()
+
+

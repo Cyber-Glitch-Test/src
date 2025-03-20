@@ -243,9 +243,10 @@ class RobotControl:
                     "uebergabepunkt_link",  
                     "right_shoulder" 
                 )
+                rospy.sleep(1.0)
                 try:
 
-                    listener.waitForTransform("base","uebergabepunkt_link", uebergabepunkt.header.stamp,  rospy.Duration(1.0))
+                    listener.waitForTransform("right_shoulder","uebergabepunkt_link", rospy.Time(0), rospy.Duration(2.0))
                     transformed_point = listener.transformPoint("base",uebergabepunkt)
 
                     # Publish the transformed point

@@ -289,6 +289,7 @@ class RobotControl:
             return True
         else:
             return False
+        return True
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
@@ -377,11 +378,16 @@ class RobotControl:
         xmin, xmax = sorted([savety_koord_1[0], savety_koord_2[0]])
         ymin, ymax = sorted([savety_koord_1[1], savety_koord_2[1]])
         zmin, zmax = sorted([savety_koord_1[2], savety_koord_2[2]])
-        rospy.logwarn("Punkt:")
-        rospy.logwarn(point)
-        print(f"Checking point: {point}, Allowed Range: x[{xmin}, {xmax}], y[{ymin}, {ymax}], z[{zmin}, {zmax}]")
-        return xmin < point[0] < xmax and ymin < point[1] < ymax and zmin < point[2] < zmax
-    
+        
+        if point[0] < xmin or point[0] > xmax or point[1] < ymin or point[1]  > ymax or point[2] < zmin or point[2] >zmax:
+            rospy.logwarn(f"Punkt liegt außerhalb")
+
+        pose.position.x = max(xmin, min(point[0], xmax))
+        pose.position.y = max(ymin, min(point[1], ymax))
+        pose.position.z = max(zmin, min(point[2], zmax))
+
+        return pose
+
     def pick_up(self,target):
 
 
@@ -502,7 +508,6 @@ class MPickUp(smach.State):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
         self.robot_control = robot_control
         self.counter = 0
-        self.gripper_controller = robot_control.gripper_controller
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
@@ -566,6 +571,7 @@ class MHoldHD(smach.State):
 class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB'])
+        self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
@@ -679,6 +685,14 @@ class BatteryFixing(smach.State):
         else:
             return 'succeeded_end'
 
+class Aborted(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded_end'])
+    def execute(self, userdata):
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
+        return 'succeeded_end'
+
+
 
 if __name__ == "__main__":
 
@@ -692,22 +706,31 @@ if __name__ == "__main__":
         # Smachstates
         smach.StateMachine.add('MPickUp', MPickUp(),
                                transitions={'succeeded':'MHold',
+                                            'aborted':'Aborted',
                                             'succeeded_with_HD':'MHoldHD'})
         smach.StateMachine.add('MHold', MHold(),
-                               transitions={'succeeded':'MPositioning'})
+                               transitions={'succeeded':'MPositioning',
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('MHoldHD', MHoldHD(),
                                transitions={'succeeded':'MPositioning',
-                                            'succeeded_end':'finished'})
+                                            'succeeded_end':'finished',
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('MPositioning', MPositioning(),
                                transitions={'succeeded':'MPickUp',
-                                            'succeeded_to_PCB':'PCB1PickUpAndPositioning'})
+                                            'succeeded_to_PCB':'PCB1PickUpAndPositioning',
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('PCB1PickUpAndPositioning', PCB1PickUpAndPositioning(),
-                               transitions={'succeeded':'PCB2PickUpAndPositioning'})
+                               transitions={'succeeded':'PCB2PickUpAndPositioning',
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('PCB2PickUpAndPositioning', PCB2PickUpAndPositioning(),
-                               transitions={'succeeded':'BatteryPositioning'})
+                               transitions={'succeeded':'BatteryPositioning',
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('BatteryPositioning', BatteryPositioning(),
                                transitions={'succeeded_end':'finished',
+                                            'aborted':'Aborted',
                                             'succeeded':'MPickUp'})
+        smach.StateMachine.add('Aborted', Aborted(),
+                               transitions={'succeeded_end':'finished'})
 
     # Iniizialisiere den introspection server
     try:

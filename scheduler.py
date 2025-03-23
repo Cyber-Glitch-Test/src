@@ -243,9 +243,11 @@ class RobotControl:
             plan = self.move_group.plan()  
             if plan[0]:  
                 rospy.loginfo(f"Führe Waypoint {i+1} aus...")
-                self.move_group.execute(plan[1], wait=True) 
+                self.move_group.execute(plan[1], wait=True)
             else:
                 rospy.logwarn(f"Konnte Waypoint {i+1} nicht erreichen!")
+                return False
+        return True
 
     def move_to_joint_goal(self, joint_goal, speed):
         #Bewegt den Roboter zu einem Gelenkwinkel
@@ -275,19 +277,16 @@ class RobotControl:
 
         #führe die Roboter bewegung zum Menschen aus
         handover_pose_end = Pose()
-        handover_pose_end = self.calc_handover_position_schoulder()
+        handover_pose_end =  self.point_inside(self.calc_handover_position_schoulder())
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_end.position.y + 0.1
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(handover_pose_start.position.x, handover_pose_start.position.y, handover_pose_start.position.z))
 
 
-        if self.point_inside(handover_pose_end):
-            if not self.move_to_target_carth(handover_pose_start,speed):
-                return False
-            if not self.move_to_target_carth(handover_pose_end,speed):
-                return False
-            return True
-        else:
+        
+        if not self.move_to_target_carth(handover_pose_start,speed):
+            return False
+        if not self.move_to_target_carth(handover_pose_end,speed):
             return False
         return True
 
@@ -394,11 +393,18 @@ class RobotControl:
         over_target = target.copy()
         over_target[2] = over_target[2] + 0.1  
         
-        self.move_to_target(self.convert_to_pose(over_target), 5)
+        if not self.move_to_target(self.convert_to_pose(over_target), 5):
+            return False
+        
         self.gripper_controller.send_gripper_command('open')
-        self.move_to_target_carth(self.convert_to_pose(target), 10)
+
+        if not self.move_to_target_carth(self.convert_to_pose(target), 10):
+            return False
+        
         self.gripper_controller.send_gripper_command('close')
-        self.move_to_target_carth(self.convert_to_pose(over_target), 5)
+
+        if not self.move_to_target_carth(self.convert_to_pose(over_target), 5):
+            return False
 
 #======Gripper Control======
 
@@ -505,7 +511,7 @@ robot_control = RobotControl("manipulator")
 
 class MPickUp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD'])
+        smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','aborted'])
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
@@ -519,30 +525,35 @@ class MPickUp(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10)
-                
+
+                if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
+                    return 'aborted'
                 self.gripper_controller.send_gripper_command('close')
                 self.gripper_controller.send_gripper_command('open')
                 plan = []
                 plan.append(self.robot_control.convert_to_pose(rb_arm_transition_over_m))
-                self.robot_control.move_to_taget_plan(plan,10)
-                robot_control.pick_up(rb_arm_on_m[15])
-                robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20)
+                if not self.robot_control.move_to_taget_plan(plan,10):
+                    return 'aborted'
+                if not robot_control.pick_up(rb_arm_on_m[15]):
+                    return 'aborted'
+                if not robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20):
+                    return 'aborted'
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
                 return 'succeeded_with_HD'
             elif newuser == "n":
+                rospy.loginfo('weiter')
                 return 'succeeded_with_HD'
 
 class MHold(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted'])
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
                 
 class MHoldHD(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_end'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
 
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
@@ -550,27 +561,22 @@ class MHoldHD(smach.State):
         #return 'succeeded'
         ###
         #self.robot_control.move_to_joint_goal( (-1.1814, -1.9903, 2.2022, -0.1776, -4.3650, 4.7049), 5)
-        ''''DEBUG BLOCK ZUM TESTEN'''
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
                 if not robot_control.handover_to_hum(5):
-                    rospy.loginfo('bewegung Fehlgeschlagen')
+                    return 'aborted'
                 return 'succeeded'
-                continue
             elif newuser == "n":
-                print("Exiting")
+                rospy.loginfo('weiter')
                 return 'succeeded'
-                break
-        ''''DEBUG BLOCK ZUM TESTEN ENDE'''
-        return 'succeeded'
         # if not self.robot_control.move_to_target(self.robot_control.calc_handover_position_schoulder(),5):
         #     return 'succeeded'  
         # return 'succeeded'
 
 class MPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB','aborted'])
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
@@ -586,55 +592,62 @@ class MPositioning(smach.State):
                     plan = []
                     plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3] ])))
                     plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3] ])))
-                    robot_control.move_to_target_carth_plan(plan,10)
+                    if not robot_control.move_to_target_carth_plan(plan,10):
+                        return 'aborted'
                     robot_control.gripper_controller.send_gripper_command('open')
                     return 'succeeded_to_PCB'
                 elif newuser == "n":
-                    print("Exiting")
+                    rospy.loginfo('weiter')
                     return 'succeeded_to_PCB'
-            return 'succeeded_to_PCB'
+
         else:
             return 'succeeded_to_PCB'
 
 
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted'])
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                robot_control.move_to_joint_goal((-3.1299, -2.1996, -0.6071, -1.8830, 1.5654, -3.1786),10)
-                robot_control.pick_up(rb_arm_on_pcb1[self.counter])
+                if not robot_control.move_to_joint_goal((-3.1299, -2.1996, -0.6071, -1.8830, 1.5654, -3.1786),10):
+                    return 'aborted'
+                if not robot_control.pick_up(rb_arm_on_pcb1[self.counter]):
+                    return 'aborted'
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_2))
-                robot_control.move_to_target_carth_plan(plan,10)
+                if not robot_control.move_to_target_carth_plan(plan,10):
+                    return 'aborted'
                 robot_control.gripper_controller.send_gripper_command('open')
                 self.counter +=1
                 return 'succeeded'
             elif newuser == "n":
-                print("Exiting")
+                print("weiter")
                 return 'succeeded'        
-        return 'succeeded'
+
 
 class PCB2PickUpAndPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded','aborted'])
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                robot_control.move_to_joint_goal((-3.4437, -1.5348, -1.6570, -1.5353, 1.5145, -1.9137),10)
-                robot_control.pick_up(rb_arm_on_pcb2[self.counter])
+                if not robot_control.move_to_joint_goal((-3.4437, -1.5348, -1.6570, -1.5353, 1.5145, -1.9137),10):
+                    return 'aborted'
+                if not robot_control.pick_up(rb_arm_on_pcb2[self.counter]):
+                    return 'aborted'
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_2))
-                robot_control.move_to_target_carth_plan(plan,10)
+                if not robot_control.move_to_target_carth_plan(plan,10):
+                    return 'aborted' 
                 robot_control.gripper_controller.send_gripper_command('open')
                 self.counter +=1
                 return 'succeeded'
@@ -660,12 +673,15 @@ class BatteryPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                robot_control.move_to_joint_goal((-2.8680, -1.9416, -1.1650, -1.6055, 1.5637, -1.3022),10)
-                robot_control.pick_up(rb_arm_on_battery[self.counter])
+                if not robot_control.move_to_joint_goal((-2.8680, -1.9416, -1.1650, -1.6055, 1.5637, -1.3022),10):
+                    return 'aborted' 
+                if not robot_control.pick_up(rb_arm_on_battery[self.counter]):
+                    return 'aborted' 
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_2))
-                robot_control.move_to_target_carth_plan(plan,10)
+                if not robot_control.move_to_target_carth_plan(plan,10):
+                    return 'aborted' 
                 robot_control.gripper_controller.send_gripper_command('open')
                 return 'succeeded'
             elif newuser == "n":

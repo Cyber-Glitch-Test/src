@@ -603,7 +603,6 @@ class MPositioning(smach.State):
         else:
             return 'succeeded_to_PCB'
 
-
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','aborted'])
@@ -628,7 +627,6 @@ class PCB1PickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("weiter")
                 return 'succeeded'        
-
 
 class PCB2PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -707,7 +705,6 @@ class Aborted(smach.State):
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         return 'succeeded_end'
-
 
 
 if __name__ == "__main__":

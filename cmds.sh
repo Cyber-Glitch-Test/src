@@ -142,11 +142,17 @@ rqt_graph
 
 #############################################################
 
-#Start Robotiq node
+#Start Robotiq Publisher node
 
 source /home/ca/catkin_ws/devel/setup.bash
 
 rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+#Start Robotiq Listener node
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+rosrun robotiq_2f_gripper_control Robotiq2FGripperStatusListener.py
 
 #Controll Node 
 

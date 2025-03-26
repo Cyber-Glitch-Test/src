@@ -161,10 +161,10 @@ class RobotControl:
         self.move_group.set_max_acceleration_scaling_factor(0.1)
 
         while True:
-            user = input('enter credentials: ')
+            user = input('Gebe initialen ein: ')
+            if (user == ""):
+                user = "ca"
             break
-
-
 
     def convert_to_pose(self, koords):
         #Konvertiert ein 1x7-Array in eine Pose
@@ -497,10 +497,9 @@ class get_Hum_mertics:
         self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
         self.is_inside_norm()
         with open('armlängen.csv', 'w', newline='') as f:
-            
             writer = csv.writer(f)
-            writer.writerow(f'{user} oberarmlänge:{self.uperarmlenght}')
-            writer.writerow(f'{user} unterarmlänge:{self.uperarmlenght}')
+            writer.writerow(f'{user}{rospy.Time.now()} oberarmlänge:{self.uperarmlenght}')
+            writer.writerow(f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}')
 
     def calc_euclidean_distance(self, point1, point2):
     #bestimme den euclidischen Abstand zwischen zwei Punkten
@@ -524,6 +523,24 @@ class get_Hum_mertics:
         else:
             rospy.logwarn(f"Unterarmmaße sind außerhalb 5. bis 95 Perzentil")
             self.inside_norm_fore = False
+
+    def get_arm_angels(self):
+        self.camera_listener()
+
+        shoulder = np.array([self.shoulderkoords[0],self.shoulderkoords[1],self.shoulderkoords[2]])
+        elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
+        hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
+
+        self.oberarmvec  = shoulder-elbow
+        self.unterarmvec = elbow-hand
+
+        elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
+        elbowangle = elbowrad * 360 / 2 / np.pi
+        return elbowangle
+
+
+
+
 
 
 robot_control = RobotControl("manipulator")
@@ -582,15 +599,22 @@ class MHoldHD(smach.State):
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
 
-        while True:
-            newuser = input('enter y/n: ')
-            if newuser == "y":
-                if not robot_control.handover_to_hum(5):
-                    return 'aborted'
-                return 'succeeded'
-            elif newuser == "n":
-                rospy.loginfo('weiter')
-                return 'succeeded'
+        newuser = input('enter y/n: ')
+        if newuser == "y":
+            if not robot_control.handover_to_hum(5):
+                return 'aborted'
+            while True:
+                newuser = input('Fertig? f: ')
+                with open('armlängen.csv', 'w', newline='') as f:
+                    rospy.loginfo(f'elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
+                    writer = csv.writer(f)
+                    writer.writerow(f'{user}{rospy.Time.now()} elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
+                if newuser == "f":
+                    break
+            return 'succeeded'
+        elif newuser == "n":
+            rospy.loginfo('weiter')
+            return 'succeeded'
 
 class MPositioning(smach.State):
     def __init__(self):

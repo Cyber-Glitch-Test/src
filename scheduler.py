@@ -11,6 +11,7 @@ import math
 import copy
 import time
 import csv
+import threading
 from tf.transformations import quaternion_from_euler  # type: ignore
 from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
@@ -18,7 +19,7 @@ from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
-import rtde_control
+
 
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
@@ -86,9 +87,8 @@ upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #
 
 tcp_coversion = 0.2
-tcp_offset = [0.0, 0.0, 0.18, 0.0, 0.0, 1.5708]
 
-savety_koord_1 = np.array([0.25, 0.0, 0.6])
+savety_koord_1 = np.array([ 0.25,  0.0, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
@@ -167,7 +167,7 @@ class RobotControl:
         while True:
             user = input('Gebe initialen ein: ')
             if (user == ""):
-                user = "ca"
+                user = "test"
             break
         
 
@@ -479,7 +479,7 @@ class get_Hum_mertics:
         self.inside_norm_upper = True
         self.inside_norm_fore  = True
         self.calc_arm_lenght()
-
+        self.stop_event = threading.Event()
     def camera_listener(self):
     #lese tf für Schulter Elebogen und Hand aus
         try:
@@ -509,10 +509,10 @@ class get_Hum_mertics:
         self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
         self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
         self.is_inside_norm()
-        with open('armlängen.csv', 'w', newline='') as f:
+        with open('armlängen.csv', 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(f'{user}{rospy.Time.now()} oberarmlänge:{self.uperarmlenght}')
-            writer.writerow(f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}')
+            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge:{self.uperarmlenght}'])
+            writer.writerow([f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
 
     def calc_euclidean_distance(self, point1, point2):
     #bestimme den euclidischen Abstand zwischen zwei Punkten
@@ -538,23 +538,25 @@ class get_Hum_mertics:
             self.inside_norm_fore = False
 
     def get_arm_angels(self):
-        self.camera_listener()
 
-        shoulder = np.array([self.shoulderkoords[0],self.shoulderkoords[1],self.shoulderkoords[2]])
-        elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
-        hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
+        while not self.stop_event.is_set():
+            self.camera_listener()
 
-        print(shoulder)
-        print(elbow)
-        print(hand)
+            shoulder = np.array([self.shoulderkoords[0],self.shoulderkoords[1],self.shoulderkoords[2]])
+            elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
+            hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
 
-        self.oberarmvec  = shoulder-elbow
-        self.unterarmvec = elbow-hand
 
-        elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
-        elbowangle = elbowrad * 360 / 2 / np.pi
-        rospy.loginfo(elbowangle)
-        return elbowangle
+            self.oberarmvec  = shoulder-elbow
+            self.unterarmvec = elbow-hand
+
+            elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
+            elbowangle = elbowrad * 360 / 2 / np.pi
+            print(elbowangle, end='\r') 
+            with open('armlaengen.csv','a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([f'{user}{rospy.Time.now()} elbogenwinkel:{elbowangle}'])
+            #return elbowangle
 
 
 
@@ -621,8 +623,13 @@ class MHoldHD(smach.State):
         if newuser == "y":
             if not robot_control.handover_to_hum(5):
                 return 'aborted'
-            elbogenwinkel = self.hm.get_arm_angels()
-            rospy.loginfo(f'elbogenwinkel:{elbogenwinkel}')
+            self.hm.stop_event = threading.Event()
+            thread = threading.Thread(target=self.hm.get_arm_angels)
+            thread.start()
+            input("Drücke Enter, um zu stoppen...\n")
+            self.hm.stop_event.set()
+            thread.join()
+
             # while True:
             #     #newuser = input('Fertig? f: ')
             #     with open('armlängen.csv', 'w', newline='') as f:
@@ -653,8 +660,9 @@ class MPositioning(smach.State):
             newuser = input('enter y/n: ')
             if newuser == "y":
                 plan = []
-                plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,0.4864801445444054, 0.49886371708542, -0.5211083282406905, 0.4928672955045461])))
-                plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,0.4864801445444054, 0.49886371708542, -0.5211083282406905, 0.4928672955045461])))
+                plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,-0.001750318574969338, -0.6960280006671624, 0.718010267397661, 0.0017929260158373297])))
+                plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,-0.001750318574969338, -0.6960280006671624, 0.718010267397661, 0.0017929260158373297
+])))
                 if not robot_control.move_to_target_carth_plan(plan,10):
                     return 'aborted'
                 if not robot_control.gripper_controller.send_gripper_command('open'):

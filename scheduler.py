@@ -18,6 +18,7 @@ from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
+import rtde_control
 
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
@@ -26,22 +27,22 @@ tcp_to_hum = [-0.0017881569928987558, -0.6960133488624333, 0.7180244453880938, 0
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
 
-rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.4231105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.4231105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.4231105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.4231105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.11513901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.06813901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.02113901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    -0.02613901314207496, 0.20474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
+rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2631105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3431105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.4231105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5031105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
 
 rb_arm_on_hum_static = np.array([0.01127138298740326, -0.40789791168606154, 0.4347020900402719,0.65967278113823, 0.13322073168864898, -0.04031615244060301, 0.7385517357139446])
 
@@ -85,9 +86,10 @@ upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #
 
 tcp_coversion = 0.2
+tcp_offset = [0.0, 0.0, 0.18, 0.0, 0.0, 1.5708]
 
 savety_koord_1 = np.array([0.25, 0.0, 0.6])
-savety_koord_2 = np.array([-0.3, -0.7, 0.0])
+savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
 
@@ -96,6 +98,8 @@ user = ""
 class RobotControl:
     
     def __init__(self, group_name):
+
+
         #Initialisiert die MoveIt-Gruppe und die Greifer-Node
         self.group_name = group_name
         self.move_group = MoveGroupCommander(self.group_name)
@@ -165,6 +169,7 @@ class RobotControl:
             if (user == ""):
                 user = "ca"
             break
+        
 
     def convert_to_pose(self, koords):
         #Konvertiert ein 1x7-Array in eine Pose
@@ -284,7 +289,14 @@ class RobotControl:
 
         #führe die Roboter bewegung zum Menschen aus
         handover_pose_end = Pose()
+
+         #TEST
+        handover_pose_end.position.x = -0.4
+        #TEST ende
         handover_pose_end =  self.point_inside(self.calc_handover_position_schoulder())
+
+
+
         handover_pose_start = copy.deepcopy(handover_pose_end)
         handover_pose_start.position.y = handover_pose_end.position.y + 0.1
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(handover_pose_start.position.x, handover_pose_start.position.y, handover_pose_start.position.z))
@@ -423,18 +435,18 @@ class GripperController:
     def __init__(self):
         #Initialisiert den Gripper-Controller
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
+        #rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
         self.gripper_status = inputMsg.Robotiq2FGripper_robot_input()
         self.command = outputMsg.Robotiq2FGripper_robot_output()
 
-    def status_listener(self,cmd):
+    # def status_listener(self,cmd):
         
-        rospy.loginfo(f'Gripper Status: {self.gripper_status}')
-        if cmd == self.gripper_status:
-            return True
-        else:
-            rospy.loginfo(f'Gripper Status weicht ab')
-            return False
+    #     rospy.loginfo(f'Gripper Status: {self.gripper_status}')
+    #     if cmd == self.gripper_status:
+    #         return True
+    #     else:
+    #         rospy.loginfo(f'Gripper Status weicht ab')
+    #         return False
 
     def send_gripper_command(self, action_type):
         #Sendet Befehle an den Greifer
@@ -451,7 +463,8 @@ class GripperController:
             self.command.rACT = 0
         self.pub.publish(self.command)
         rospy.sleep(2)
-        return self.status_listener(action_type)
+        #return self.status_listener(action_type)
+        return True
 
 #======Get Hum Data======
 
@@ -531,11 +544,16 @@ class get_Hum_mertics:
         elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
         hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
 
+        print(shoulder)
+        print(elbow)
+        print(hand)
+
         self.oberarmvec  = shoulder-elbow
         self.unterarmvec = elbow-hand
 
         elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
         elbowangle = elbowrad * 360 / 2 / np.pi
+        rospy.loginfo(elbowangle)
         return elbowangle
 
 
@@ -550,12 +568,12 @@ robot_control = RobotControl("manipulator")
 class MPickUp(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','aborted'])
-        self.robot_control = robot_control
+        #self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
-        if not self.gripper_controller.send_gripper_command('activate'):
+        if not robot_control.gripper_controller.send_gripper_command('activate'):
             return 'aborted'
         #return 'succeeded_with_HD'
 
@@ -567,13 +585,13 @@ class MPickUp(smach.State):
 
                 if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
                     return 'aborted'
-                if not self.gripper_controller.send_gripper_command('close'):
+                if not robot_control.gripper_controller.send_gripper_command('close'):
                     return 'aborted'
-                if not self.gripper_controller.send_gripper_command('open'):
+                if not robot_control.gripper_controller.send_gripper_command('open'):
                     return 'aborted'
                 plan = []
-                plan.append(self.robot_control.convert_to_pose(rb_arm_transition_over_m))
-                if not self.robot_control.move_to_taget_plan(plan,10):
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
+                if not robot_control.move_to_taget_plan(plan,10):
                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_m[15]):
                     return 'aborted'
@@ -595,7 +613,7 @@ class MHold(smach.State):
 class MHoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
-
+        self.hm = get_Hum_mertics()
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
 
@@ -603,18 +621,24 @@ class MHoldHD(smach.State):
         if newuser == "y":
             if not robot_control.handover_to_hum(5):
                 return 'aborted'
-            while True:
-                newuser = input('Fertig? f: ')
-                with open('armlängen.csv', 'w', newline='') as f:
-                    rospy.loginfo(f'elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
-                    writer = csv.writer(f)
-                    writer.writerow(f'{user}{rospy.Time.now()} elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
-                if newuser == "f":
-                    break
+            elbogenwinkel = self.hm.get_arm_angels()
+            rospy.loginfo(f'elbogenwinkel:{elbogenwinkel}')
+            # while True:
+            #     #newuser = input('Fertig? f: ')
+            #     with open('armlängen.csv', 'w', newline='') as f:
+            #         rospy.loginfo(f'elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
+            #         writer = csv.writer(f)
+            #         writer.writerow(f'{user}{rospy.Time.now()} elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
+            #         continue
+            #     if newuser == "f":
+            #         break
             return 'succeeded'
         elif newuser == "n":
             rospy.loginfo('weiter')
             return 'succeeded'
+        elif newuser == "a":
+            rospy.loginfo('abort')
+            return 'aborted'
 
 class MPositioning(smach.State):
     def __init__(self):
@@ -623,25 +647,22 @@ class MPositioning(smach.State):
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
-        ### kommentieren für skippen
 
-        ###
         self.counter += 1
-        if (self.counter % 4==0):
-            while True:
-                newuser = input('enter y/n: ')
-                if newuser == "y":
-                    plan = []
-                    plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3] ])))
-                    plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,tcp_to_hum[0],tcp_to_hum[1],tcp_to_hum[2],tcp_to_hum[3] ])))
-                    if not robot_control.move_to_target_carth_plan(plan,10):
-                        return 'aborted'
-                    if robot_control.gripper_controller.send_gripper_command('open'):
-                        return'aborted'
-                    return 'succeeded_to_PCB'
-                elif newuser == "n":
-                    rospy.loginfo('weiter')
-                    return 'succeeded_to_PCB'
+        if not (self.counter % 4==0):
+            newuser = input('enter y/n: ')
+            if newuser == "y":
+                plan = []
+                plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,0.4864801445444054, 0.49886371708542, -0.5211083282406905, 0.4928672955045461])))
+                plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,0.4864801445444054, 0.49886371708542, -0.5211083282406905, 0.4928672955045461])))
+                if not robot_control.move_to_target_carth_plan(plan,10):
+                    return 'aborted'
+                if not robot_control.gripper_controller.send_gripper_command('open'):
+                    return'aborted'
+                return 'succeeded_to_PCB'
+            elif newuser == "n":
+                rospy.loginfo('weiter')
+                return 'succeeded_to_PCB'
 
         else:
             return 'succeeded_to_PCB'
@@ -709,7 +730,7 @@ class CopperFixing1To6(smach.State):
 
 class BatteryPositioning(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded','succeeded_end'])
+        smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")

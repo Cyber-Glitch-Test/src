@@ -40,34 +40,42 @@ rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.19474944
                 np.array([0.4231105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.4231105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.4231105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.5031105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
+                np.array([0.5051105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5051105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5051105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.5051105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008])]
 
 rb_arm_on_hum_static = np.array([0.01127138298740326, -0.40789791168606154, 0.4347020900402719,0.65967278113823, 0.13322073168864898, -0.04031615244060301, 0.7385517357139446])
 
 rb_arm_transition =             np.array([0.22048980978459626, -0.11962800779329041, 0.22232535871506093 ,-0.00519597519482744, -0.7000337195214675, 0.7140685181262056, 0.005651972731604554])
 rb_arm_transition_over_m =      np.array([0.32755193192480295, 0,                    0.3552028979677898 ,-0.002982105237080432, -0.9999915258909946, 0.00274986658972347, 0.0007024445132438654])
 rb_arm_transition_over_pcb1 =   np.array([0.7371109279194257, -0.12405534656551466, 0.3564804416147143 ,0.701903624069778, 0.7119699919919052, 0.017634125210474614, 0.010911949817505392])
-rb_arm_transition_over_pcb2 =   np.array([0.41418579559857893, -0.25037007326362604, 0.4098002793824048  ,0.9994996999243878, 0.018132610811126923, -0.01488422170868633, 0.021213632889197198])
-rb_arm_transition_over_gb1_1 =  np.array([0.47128333676974465, -0.3092677283735018, 0.37621783912204397 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
-rb_arm_transition_over_gb1_2 =  np.array([0.47128333676974465, -0.4592677283735018, 0.35621783912204397 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
+rb_arm_transition_over_pcb2 =   np.array([0.39299783753064255, -0.25037007326362604, 0.4098002793824048  ,0.9994996999243878, 0.018132610811126923, -0.01488422170868633, 0.021213632889197198])
 
-rb_arm_transition_over_gb2_1 =  np.array([0.6419500445580288, -0.3885145028949433, 0.3814376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
-rb_arm_transition_over_gb2_2 =  np.array([0.6419500445580288, -0.4685145028949433, 0.3514376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
+rb_arm_transition_over_gb0_1 =  np.array([0.43920883565114404, -0.27118297223348553, 0.21533919567733978,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
+rb_arm_transition_over_gb0_2 =  np.array([0.43920912923516957, -0.21053279915028705, 0.3005243278363052,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 
-rb_arm_transition_over_gb3_1 =  np.array([0.6902564041569417, -0.3598755195808413, 0.38340867662796277 ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696])
-rb_arm_transition_over_gb3_2 =  np.array([0.6902564041569417, -0.4598755195808413, 0.35340867662796277,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696])
+rb_arm_transition_over_gb1_1 =  np.array([0.4384443484397782, -0.33196635637380156, 0.3911058561909323,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
+rb_arm_transition_over_gb1_2 =  np.array([0.4384443484397782, -0.46021622516842065, 0.3910704893338057  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
+rb_arm_transition_over_gb1_3 =  np.array([0.4384443484397782, -0.46018886151503624, 0.35487302405715704  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
+
+rb_arm_transition_over_gb2_1 =  np.array([0.5486854170473805, -0.3885145028949433, 0.3814376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
+rb_arm_transition_over_gb2_2 =  np.array([0.5486854170473805, -0.4685145028949433, 0.3514376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
+rb_arm_transition_over_gb2_3 =  np.array([0.5486854170473805, -0.27057393609447655, 0.35141967557281056 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
+
+rb_arm_transition_over_gb3_1 =  np.array([0.6402808547359244, -0.26790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
+rb_arm_transition_over_gb3_2 =  np.array([0.6402808547359244, -0.46790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
+rb_arm_transition_over_gb3_3 =  np.array([0.6402808547359244, -0.46790083190492066, 0.35478830422197494 ,0.010290457772605947, 0.9997533010888775, -0.005696452057469483, 0.018841281131592193
+])
 
 rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
                     np.array([0.6866488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
                     np.array([0.7416488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
                     np.array([0.7966488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])]
 
-rb_arm_on_pcb2  =  [np.array([0.5398007528077089, -0.2525570470084052, 0.15893172207723374   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
-                    np.array([0.44369609430592183, -0.2525888588757342, 0.15893172207723374   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
-                    np.array([0.35138831228932305, -0.2525888588757342, 0.15893172207723374 ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
+rb_arm_on_pcb2  =  [np.array([0.4165396170280912, -0.2591341631409675, 0.15891605521745683   ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
+                    np.array([]),
+                    np.array([]),
                     np.array([])]
 
 rb_arm_on_battery =[np.array([0.6064043378480363, -0.019193581297668794, 0.15491817631772764   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
@@ -88,7 +96,7 @@ upperarmlenghtdin_min = 0.285 #
 
 tcp_coversion = 0.2
 
-savety_koord_1 = np.array([ 0.25,  0.0, 0.6])
+savety_koord_1 = np.array([ 0.20,  0.0, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
@@ -108,6 +116,8 @@ class RobotControl:
         self.robot = moveit_commander.RobotCommander()
 
         rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
+
+        
 
         # Tischfläche in MoveIt zur Kollisionserkennung hinzufügen
         planning_frame = self.move_group.get_planning_frame()
@@ -558,12 +568,11 @@ class get_Hum_mertics:
                 writer.writerow([f'{user}{rospy.Time.now()} elbogenwinkel:{elbowangle}'])
             #return elbowangle
 
-
-
-
-
-
 robot_control = RobotControl("manipulator")
+    
+
+
+
 
 ################################ Initialisiere Smachstates ################################
 
@@ -630,15 +639,8 @@ class MHoldHD(smach.State):
             self.hm.stop_event.set()
             thread.join()
 
-            # while True:
-            #     #newuser = input('Fertig? f: ')
-            #     with open('armlängen.csv', 'w', newline='') as f:
-            #         rospy.loginfo(f'elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
-            #         writer = csv.writer(f)
-            #         writer.writerow(f'{user}{rospy.Time.now()} elbogenwinkel:{get_Hum_mertics.get_arm_angels}')
-            #         continue
-            #     if newuser == "f":
-            #         break
+            if not robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20):
+                    return 'aborted'
             return 'succeeded'
         elif newuser == "n":
             rospy.loginfo('weiter')
@@ -659,14 +661,12 @@ class MPositioning(smach.State):
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
             if newuser == "y":
-                plan = []
-                plan.append(robot_control.convert_to_pose(np.array([0.24519019861498245, -0.23198725187902597, 0.21509194770938284,-0.001750318574969338, -0.6960280006671624, 0.718010267397661, 0.0017929260158373297])))
-                plan.append(robot_control.convert_to_pose(np.array([0.46901276622525534, -0.27223792278898706, 0.20509194770938284,-0.001750318574969338, -0.6960280006671624, 0.718010267397661, 0.0017929260158373297
-])))
-                if not robot_control.move_to_target_carth_plan(plan,10):
+                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_1),10):
                     return 'aborted'
                 if not robot_control.gripper_controller.send_gripper_command('open'):
                     return'aborted'
+                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_2),10):
+                    return 'aborted'
                 return 'succeeded_to_PCB'
             elif newuser == "n":
                 rospy.loginfo('weiter')
@@ -691,9 +691,15 @@ class PCB1PickUpAndPositioning(smach.State):
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_2))
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_3))
                 if not robot_control.move_to_target_carth_plan(plan,10):
                     return 'aborted'
                 if not robot_control.gripper_controller.send_gripper_command('open'):
+                    return 'aborted'
+                plan = []
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_2))
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_1))
+                if not robot_control.move_to_target_carth_plan(plan,10):
                     return 'aborted'
                 self.counter +=1
                 return 'succeeded'
@@ -710,17 +716,26 @@ class PCB2PickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-3.4437, -1.5348, -1.6570, -1.5353, 1.5145, -1.9137),10):
+                if not robot_control.move_to_joint_goal((-3.4437, -1.5349, -1.6576, -1.5354, 1.5145, -3.469),10):
                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb2[self.counter]):
                     return 'aborted'
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_2))
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_3))
                 if not robot_control.move_to_target_carth_plan(plan,10):
                     return 'aborted' 
                 if not robot_control.gripper_controller.send_gripper_command('open'):
                     return 'aborted'
+                
+                plan = []
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_2))
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_1))
+
+                if not robot_control.move_to_target_carth_plan(plan,10):
+                    return 'aborted'
+                
                 self.counter +=1
                 return 'succeeded'
             elif newuser == "n":
@@ -752,11 +767,18 @@ class BatteryPositioning(smach.State):
                 plan = []
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_2))
+                #plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_3))
                 if not robot_control.move_to_target_carth_plan(plan,10):
                     return 'aborted' 
                 if not robot_control.gripper_controller.send_gripper_command('open'):
                     return 'aborted'
-                return 'succeeded'
+                # plan = []
+                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_2))
+                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
+                # if not robot_control.move_to_target_carth_plan(plan,10):
+                #     return 'aborted' 
+                # return 'succeeded'
+            
             elif newuser == "n":
                 print("Exiting")
                 return 'succeeded' 
@@ -776,10 +798,15 @@ class BatteryFixing(smach.State):
 
 class Aborted(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded_end'])
+        smach.State.__init__(self, outcomes=['succeeded_end','succeeded'])
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
-        return 'succeeded_end'
+        while True:
+            newuser = input('neuer Versuch? y/n: ')
+            if newuser == "y":
+                return 'succeeded'
+            elif newuser == "n":
+                return 'succeeded_end'
 
 
 if __name__ == "__main__":
@@ -787,8 +814,10 @@ if __name__ == "__main__":
     rospy.init_node('ur5_moveit_control', anonymous=True)
     moveit_commander.roscpp_initialize(sys.argv)
 
-    robot_control = RobotControl("manipulator")
+    robot_control.gripper_controller.send_gripper_command('activate')
+    robot_control.gripper_controller.send_gripper_command('open')
 
+    
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:
         # Smachstates
@@ -818,7 +847,8 @@ if __name__ == "__main__":
                                             'aborted':'Aborted',
                                             'succeeded':'MPickUp'})
         smach.StateMachine.add('Aborted', Aborted(),
-                               transitions={'succeeded_end':'finished'})
+                               transitions={'succeeded_end':'finished',
+                                            'succeeded':'MPickUp'})
 
     # Iniizialisiere den introspection server
     try:

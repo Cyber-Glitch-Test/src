@@ -322,12 +322,13 @@ class RobotControl:
 
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
-        hm = get_Hum_mertics()
+        
         broadcaster = tf.TransformBroadcaster()
         listener = tf.TransformListener()  
             #hand_over_position = Pose()
         for i in range(2):
             for sek in range(10):
+                hm = get_Hum_mertics()
                 if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)) and hm.inside_norm_upper and hm.inside_norm_fore:
                 #if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):    
                     rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
@@ -446,18 +447,47 @@ class GripperController:
     def __init__(self):
         #Initialisiert den Gripper-Controller
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        #rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
-        self.gripper_status = inputMsg.Robotiq2FGripper_robot_input()
         self.command = outputMsg.Robotiq2FGripper_robot_output()
 
-    # def status_listener(self,cmd):
-        
-    #     rospy.loginfo(f'Gripper Status: {self.gripper_status}')
-    #     if cmd == self.gripper_status:
-    #         return True
-    #     else:
-    #         rospy.loginfo(f'Gripper Status weicht ab')
-    #         return False
+    def statusInterpreter(status):
+        """Generate a string according to the current value of the status variables."""
+        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg.Robotiq2FGripper_robot_input, status)
+        output = ''
+        #gSTA
+        if(status.gSTA == 0):
+            output = 'Gripper is in reset ( or automatic release ) state. see Fault Status if Gripper is activated\n'
+        if(status.gSTA == 1):
+            output = 'Activation in progress\n'
+        if(status.gSTA == 2):
+            output = 'Not used\n'
+        if(status.gSTA == 3):
+            output = 'activate'
+
+        #gOBJ
+        if(status.gOBJ == 0):
+            output = 'Fingers are in motion (only meaningful if gGTO = 1)\n'
+        if(status.gOBJ == 1):
+            output = 'Fingers have stopped due to a contact while opening\n'
+        if(status.gOBJ == 2):
+            output = 'close'
+        if(status.gOBJ == 3):
+            output = 'open'
+    
+        if(status.gFLT == 0x05):
+            output = 'Priority Fault: Action delayed, initialization must be completed prior to action\n'
+        if(status.gFLT == 0x07):
+            output = 'Priority Fault: The activation bit must be set prior to action\n'
+        if(status.gFLT == 0x09):
+            output = 'Minor Fault: The communication chip is not ready (may be booting)\n'   
+        if(status.gFLT == 0x0B):
+            output = 'Minor Fault: Automatic release in progress\n'
+        if(status.gFLT == 0x0E):
+            output = 'Major Fault: Overcurrent protection triggered\n'
+        if(status.gFLT == 0x0F):
+            output = 'Major Fault: Automatic release completed\n'
+        rospy.loginfo(output)
+        return output
+
 
     def send_gripper_command(self, action_type):
         #Sendet Befehle an den Greifer
@@ -474,8 +504,7 @@ class GripperController:
             self.command.rACT = 0
         self.pub.publish(self.command)
         rospy.sleep(2)
-        #return self.status_listener(action_type)
-        return True
+        return action_type == self.statusInterpreter
 
 #======Get Hum Data======
 
@@ -487,11 +516,40 @@ class get_Hum_mertics:
         self.shoulderkoords = [0.0, 0.0, 0.0]
         self.elbowkoords =    [0.0, 0.0, 0.0]
         self.handkoords =     [0.0, 0.0, 0.0]
+        self.rightshoulderkoords = [0.0, 0.0, 0.0]
+        self.rightelbowkoords =    [0.0, 0.0, 0.0]
+        self.righthandkoords =     [0.0, 0.0, 0.0]
+        self.leftshoulderkoords = [0.0, 0.0, 0.0]
+        self.leftelbowkoords =    [0.0, 0.0, 0.0]
+        self.lefthandkoords =     [0.0, 0.0, 0.0]
         self.inside_norm_upper = True
         self.inside_norm_fore  = True
         self.calc_arm_lenght()
         self.stop_event = threading.Event()
+
     def camera_listener(self):
+    #lese tf für Schulter Elebogen und Hand aus
+        try:
+
+            time = rospy.Time(0)
+            listener = tf.TransformListener()
+
+            listener.waitForTransform("base", "shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "elbow",    time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "hand",     time, rospy.Duration(1.0))
+
+            shoulder_trans, _ = listener.lookupTransform("base", "shoulder",  time)
+            elbow_trans,    _ = listener.lookupTransform("base", "elbow",     time)
+            hand_trans,     _ = listener.lookupTransform("base", "hand",      time)
+
+            self.shoulderkoords =   [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
+            self.elbowkoords =      [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
+            self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
+
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logwarn(f"TF Error: {e}")
+    
+    def camera_listener_arms(self):
     #lese tf für Schulter Elebogen und Hand aus
         try:
 
@@ -502,27 +560,40 @@ class get_Hum_mertics:
             listener.waitForTransform("base", "right_elbow",    time, rospy.Duration(1.0))
             listener.waitForTransform("base", "right_hand",     time, rospy.Duration(1.0))
 
-            shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder",  time)
-            elbow_trans,    _ = listener.lookupTransform("base", "right_elbow",     time)
-            hand_trans,     _ = listener.lookupTransform("base", "right_hand",      time)
+            right_shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder",  time)
+            right_elbow_trans,    _ = listener.lookupTransform("base", "right_elbow",     time)
+            right_hand_trans,     _ = listener.lookupTransform("base", "right_hand",      time)
 
-            self.shoulderkoords =   [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
-            self.elbowkoords =      [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
-            self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
+            self.rightshoulderkoords =   [right_shoulder_trans[0],  right_shoulder_trans[1], right_shoulder_trans[2]]
+            self.rightelbowkoords =      [right_elbow_trans[0],     right_elbow_trans[1],    right_elbow_trans[2]]
+            self.righthandkoords =       [right_hand_trans[0],      right_hand_trans[1],     right_hand_trans[2]]
+
+            listener.waitForTransform("base", "left_shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "left_elbow",    time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "left_hand",     time, rospy.Duration(1.0))
+
+            left_shoulder_trans, _ = listener.lookupTransform("base", "left_shoulder",  time)
+            left_elbow_trans,    _ = listener.lookupTransform("base", "left_elbow",     time)
+            left_hand_trans,     _ = listener.lookupTransform("base", "left_hand",      time)
+
+            self.leftshoulderkoords =   [left_shoulder_trans[0], left_shoulder_trans[1], left_shoulder_trans[2]]
+            self.leftelbowkoords =      [left_elbow_trans[0],    left_elbow_trans[1],    left_elbow_trans[2]]
+            self.lefthandkoords =       [left_hand_trans[0],     left_hand_trans[1],     left_hand_trans[2]]
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
     #bestimme ober und unterarm länge
-
         self.camera_listener()
-        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
-        self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
+        self.camera_listener_arms()
+        self.uperarmlenght = self.calc_euclidean_distance(self.leftshoulderkoords,  self.leftelbowkoords)
+        self.forearmlenght = self.calc_euclidean_distance(self.lefthandkoords,      self.leftelbowkoords)
         self.is_inside_norm()
-        with open('armlängen.csv', 'a', newline='') as f:
+
+        with open('armlaengen.csv', 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge:{self.uperarmlenght}'])
+            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
             writer.writerow([f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
 
     def calc_euclidean_distance(self, point1, point2):
@@ -533,6 +604,14 @@ class get_Hum_mertics:
             distance += (point2[i] - point1[i]) ** 2
         return math.sqrt(distance)
     
+    def calc_angel(self, point1, point2, point3):
+        vec1  = point1-point2
+        vec2  = point2-point3
+
+        angelrad = np.arccos(np.dot(vec1,vec2)/ (np.sqrt((vec1*vec1).sum())*np.sqrt((vec2*vec2).sum())))
+        angle = angelrad * 360 / 2 / np.pi
+        return angle
+
     def is_inside_norm(self):
         #Überprüft ob Ober und Unterarm innerhalb des 5. und 95 Perzentil sind
 
@@ -547,43 +626,42 @@ class get_Hum_mertics:
         else:
             rospy.logwarn(f"Unterarmmaße sind außerhalb 5. bis 95 Perzentil")
             self.inside_norm_fore = False
-
+    
     def get_arm_angels(self):
 
         while not self.stop_event.is_set():
-            self.camera_listener()
+            self.camera_listener_arms()
 
-            shoulder = np.array([self.shoulderkoords[0],self.shoulderkoords[1],self.shoulderkoords[2]])
-            elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
-            hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
+            right_shoulder = np.array([self.rightshoulderkoords[0],self.rightshoulderkoords[1],self.rightshoulderkoords[2]])
+            right_elbow = np.array([self.rightelbowkoords[0],self.rightelbowkoords[1],self.rightelbowkoords[2]])
+            right_hand = np.array([self.righthandkoords[0],self.righthandkoords[1],self.righthandkoords[2]])
 
+            left_shoulder = np.array([self.leftshoulderkoords[0],self.leftshoulderkoords[1],self.leftshoulderkoords[2]])
+            left_elbow = np.array([self.leftelbowkoords[0],self.leftelbowkoords[1],self.leftelbowkoords[2]])
+            left_hand = np.array([self.lefthandkoords[0],self.lefthandkoords[1],self.lefthandkoords[2]])
 
-            self.oberarmvec  = shoulder-elbow
-            self.unterarmvec = elbow-hand
+            right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
+            left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
 
-            elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
-            elbowangle = elbowrad * 360 / 2 / np.pi
-            print(elbowangle, end='\r') 
+            print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
             with open('armlaengen.csv','a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([f'{user}{rospy.Time.now()} elbogenwinkel:{elbowangle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel links: {left_angle}'])
             #return elbowangle
 
 robot_control = RobotControl("manipulator")
     
 
-
-
-
 ################################ Initialisiere Smachstates ################################
 
 class Start(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['MPickup','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end'])
+        smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end'])
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         print("\n--- Hauptmenü ---")
-        print("1. MPickup")
+        print("1. MPickUp")
         print("2. MHoldHD")
         print("3. MPositioning")
         print("4. PCB1PickUpAndPositioning")
@@ -591,11 +669,11 @@ class Start(smach.State):
         print("6. BatteryPickUpAndPositioning")
         print("7. succeeded_end")
 
-        start = input("Please choose start Class")
+        start = input("Please choose start Class: ")
         while True:
             if start == "1" or start == "":
-                print("\nYou have choosen MPickup.")
-                return 'MPickup'
+                print("\nYou have choosen MPickUp.")
+                return 'MPickUp'
             elif start == "2":
                 print("\nYou have choosen MHoldHD.")
                 return 'MHoldHD'
@@ -645,7 +723,7 @@ class MPickUp(smach.State):
                 plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
                 if not robot_control.move_to_taget_plan(plan,10):
                     return 'aborted'
-                if not robot_control.pick_up(rb_arm_on_m[15]):
+                if not robot_control.pick_up(rb_arm_on_m[self.counter]):
                     return 'aborted'
                 if not robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20):
                     return 'aborted'
@@ -783,7 +861,6 @@ class PCB2PickUpAndPositioning(smach.State):
                 print("Exiting")
                 return 'succeeded' 
 
-
 class BatteryPickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
@@ -816,7 +893,6 @@ class BatteryPickUpAndPositioning(smach.State):
                 print("Exiting")
                 return 'succeeded' 
 
-
 class Aborted(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded_end','succeeded'])
@@ -843,7 +919,7 @@ if __name__ == "__main__":
     with sm:
         # Smachstates
         smach.StateMachine.add('Start', Start(),
-                               transitions={'MPickup':'MPickup',
+                               transitions={'MPickUp':'MPickUp',
                                             'MHoldHD':'MHoldHD',
                                             'MPositioning':'MPositioning',
                                             'PCB1PickUpAndPositioning':'PCB1PickUpAndPositioning',

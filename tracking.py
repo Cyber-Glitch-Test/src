@@ -172,32 +172,84 @@ while not rospy.is_shutdown():
         #shoulder_trans_kf = kf_shoulder.update([x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder])
         #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
         #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])
+        left_shoulder_trans =   [x_world_left_shoulder,y_world_left_shoulder,z_left_shoulder]
+        left_elbow_trans =      [x_world_left_elbow,y_world_left_elbow,z_left_elbow]
+        left_hand_trans =       [x_world_left_hand,y_world_left_hand,z_left_hand]
 
-        shoulder_trans = calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
-        elbow_trans = calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
-        hand_trans = calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
+        right_shoulder_trans =  [x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder]
+        right_elbow_trans =     [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
+        right_hand_trans =      [x_world_right_hand,y_world_right_hand,z_right_hand]
+
+        shoulder_trans =    calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
+        elbow_trans =       calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
+        hand_trans =        calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
+
         #Erstelle punkte für den Publisher
+        shoulder_point = PointStamped()
+        shoulder_point.header.frame_id = "camera_link"
+        shoulder_point.header.stamp = rospy.Time.now()  
+        shoulder_point.point.x = -shoulder_trans[0]    
+        shoulder_point.point.y = shoulder_trans[2]
+        shoulder_point.point.z = shoulder_trans[1]
+        rospy.logwarn(f"Schulter: {-shoulder_trans[0],shoulder_trans[2],shoulder_trans[1] }")
+
+        elbow_point = PointStamped()
+        elbow_point.header.frame_id = "camera_link"
+        elbow_point.header.stamp = rospy.Time.now()  
+        elbow_point.point.x = -elbow_trans[0]  
+        elbow_point.point.y = elbow_trans[2]  
+        elbow_point.point.z = elbow_trans[1]  
+
+        hand_point = PointStamped()
+        hand_point.header.frame_id = "camera_link"
+        hand_point.header.stamp = rospy.Time.now() 
+        hand_point.point.x = -hand_trans[0]
+        hand_point.point.y = hand_trans[2]
+        hand_point.point.z = hand_trans[1]
+
+        left_shoulder_point = PointStamped()
+        left_shoulder_point.header.frame_id = "camera_link"
+        left_shoulder_point.header.stamp = rospy.Time.now()  
+        left_shoulder_point.point.x = -left_shoulder_trans[0]    
+        left_shoulder_point.point.y = left_shoulder_trans[2]
+        left_shoulder_point.point.z = left_shoulder_trans[1]
+
+
+        left_elbow_point = PointStamped()
+        left_elbow_point.header.frame_id = "camera_link"
+        left_elbow_point.header.stamp = rospy.Time.now()  
+        left_elbow_point.point.x = -left_elbow_trans[0]  
+        left_elbow_point.point.y = left_elbow_trans[2]  
+        left_elbow_point.point.z = left_elbow_trans[1]  
+
+        left_hand_point = PointStamped()
+        left_hand_point.header.frame_id = "camera_link"
+        left_hand_point.header.stamp = rospy.Time.now() 
+        left_hand_point.point.x = -left_hand_trans[0]
+        left_hand_point.point.y = left_hand_trans[2]
+        left_hand_point.point.z = left_hand_trans[1]
+
         right_shoulder_point = PointStamped()
         right_shoulder_point.header.frame_id = "camera_link"
         right_shoulder_point.header.stamp = rospy.Time.now()  
-        right_shoulder_point.point.x = -shoulder_trans[0]    
-        right_shoulder_point.point.y = shoulder_trans[2]
-        right_shoulder_point.point.z = shoulder_trans[1]
-        rospy.logwarn(f"Schulter: {-shoulder_trans[0],shoulder_trans[2],shoulder_trans[1] }")
+        right_shoulder_point.point.x = -right_shoulder_trans[0]    
+        right_shoulder_point.point.y = right_shoulder_trans[2]
+        right_shoulder_point.point.z = right_shoulder_trans[1]
+
 
         right_elbow_point = PointStamped()
         right_elbow_point.header.frame_id = "camera_link"
         right_elbow_point.header.stamp = rospy.Time.now()  
-        right_elbow_point.point.x = -elbow_trans[0]  
-        right_elbow_point.point.y = elbow_trans[2]  
-        right_elbow_point.point.z = elbow_trans[1]  
+        right_elbow_point.point.x = -right_elbow_trans[0]  
+        right_elbow_point.point.y = right_elbow_trans[2]  
+        right_elbow_point.point.z = right_elbow_trans[1]  
 
         right_hand_point = PointStamped()
         right_hand_point.header.frame_id = "camera_link"
         right_hand_point.header.stamp = rospy.Time.now() 
-        right_hand_point.point.x = -hand_trans[0]
-        right_hand_point.point.y = hand_trans[2]
-        right_hand_point.point.z = hand_trans[1]
+        right_hand_point.point.x = -right_hand_trans[0]
+        right_hand_point.point.y = right_hand_trans[2]
+        right_hand_point.point.z = right_hand_trans[1]
 
         # Veröffentliche den Frame "camera_link" im TF-Baum
         broadcaster.sendTransform(
@@ -210,6 +262,41 @@ while not rospy.is_shutdown():
 
         # Warte auf die TF-Daten
         try:
+            # Warte auf die Transformation
+            listener.waitForTransform("base", "camera_link", shoulder_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", shoulder_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0), 
+                rospy.Time.now(),
+                "shoulder",
+                "base"
+            )
+
+            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            listener.waitForTransform("base", "camera_link", elbow_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", elbow_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0),  
+                rospy.Time.now(),
+                "elbow",
+                "base"
+            )
+
+            listener.waitForTransform("base", "camera_link", hand_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", hand_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0), 
+                rospy.Time.now(),
+                "hand",
+                "base"
+            )
+
             # Warte auf die Transformation
             listener.waitForTransform("base", "camera_link", right_shoulder_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_shoulder_point)
@@ -242,6 +329,41 @@ while not rospy.is_shutdown():
                 (0.0, 0.0, 0.0, 1.0), 
                 rospy.Time.now(),
                 "right_hand",
+                "base"
+            )
+
+            # Warte auf die Transformation
+            listener.waitForTransform("base", "camera_link", left_shoulder_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", left_shoulder_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0), 
+                rospy.Time.now(),
+                "left_shoulder",
+                "base"
+            )
+
+            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            listener.waitForTransform("base", "camera_link", left_elbow_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", left_elbow_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0),  
+                rospy.Time.now(),
+                "left_elbow",
+                "base"
+            )
+
+            listener.waitForTransform("base", "camera_link", left_hand_point.header.stamp, rospy.Duration(1.0))
+            transformed_point = listener.transformPoint("base", left_hand_point)
+
+            broadcaster.sendTransform(
+                (transformed_point.point.x, transformed_point.point.y, transformed_point.point.z),
+                (0.0, 0.0, 0.0, 1.0), 
+                rospy.Time.now(),
+                "left_hand",
                 "base"
             )
 

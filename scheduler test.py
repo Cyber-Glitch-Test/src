@@ -12,6 +12,7 @@ import copy
 import time
 import csv
 import threading
+import roslib; roslib.load_manifest('robotiq_2f_gripper_control') # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
 from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
@@ -19,6 +20,11 @@ from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
+from moveit_msgs.msg import RobotTrajectory # type: ignore
+from trajectory_msgs.msg import JointTrajectoryPoint # type: ignore
+from std_msgs.msg import String # type: ignore
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg # type: ignore
+
 
 
 #======Konstanten====== 
@@ -169,8 +175,7 @@ class RobotControl:
             if (user == ""):
                 user = "test"
                 print(f"user: {user}")
-            break
-        
+            break    
 
     def convert_to_pose(self, koords):
         #Konvertiert ein 1x7-Array in eine Pose
@@ -221,6 +226,10 @@ class RobotControl:
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.05) 
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
+        if fraction <= 1.0:
+            rospy.loginfo(f"Bewegungsplaner fehlgeschlagen: {fraction}")
+            return False
+
         success = self.move_group.execute(plan, wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
@@ -237,7 +246,11 @@ class RobotControl:
 
         self.move_group.set_planning_time(10.0) 
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.05) 
-        
+
+        if fraction <= 1.0:
+            rospy.loginfo(f"Bewegungsplaner fehlgeschlagen: {fraction}")
+            return False
+
         success = self.move_group.execute(plan, wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
@@ -430,24 +443,83 @@ class RobotControl:
         
         return True
 
+    def planner(self,command_list):
+        trajectory = RobotTrajectory()
+        joint_trajectory = trajectory.joint_trajectory
+        joint_trajectory.joint_names = self.move_group.get_joints()
+        waypoints = []
+        for command in command_list:
+            try:
+                if command['type'] == 'cartesian':
+                    waypoints.append(command['pose'])
+                elif command['type'] == 'joint':
+                    self.move_group.set_joint_value_target(command['joints'])
+                    plan = self.move_group.plan()
+                    if plan and plan[0]:
+                        self.move_group.execute(plan[1], wait=True)
+                    else:
+                        rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
+                elif command['type'] == 'gripper':
+                    
+            except Exception as e:
+                rospy.logerr(f"Fehler beim Verarbeiten des Befehls: {e}")
+        
+        if waypoints:
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+            if fraction < 1.0:
+                self.move_group.execute(plan, wait=True)  # Kartesische Bewegung direkt ausführen
+                return plan
+            else:
+                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+        return None
+
 #======Gripper Control======
 
 class GripperController:
     def __init__(self):
         #Initialisiert den Gripper-Controller
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        #rospy.Subscriber('Robotiq2FGripperRobotInput', inputMsg.Robotiq2FGripper_robot_input, self.status_callback)
-        self.gripper_status = inputMsg.Robotiq2FGripper_robot_input()
         self.command = outputMsg.Robotiq2FGripper_robot_output()
 
-    # def status_listener(self,cmd):
-        
-    #     rospy.loginfo(f'Gripper Status: {self.gripper_status}')
-    #     if cmd == self.gripper_status:
-    #         return True
-    #     else:
-    #         rospy.loginfo(f'Gripper Status weicht ab')
-    #         return False
+    def statusInterpreter(status):
+        """Generate a string according to the current value of the status variables."""
+        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg.Robotiq2FGripper_robot_input, status)
+        output = ''
+        #gSTA
+        if(status.gSTA == 0):
+            output = 'Gripper is in reset ( or automatic release ) state. see Fault Status if Gripper is activated\n'
+        if(status.gSTA == 1):
+            output = 'Activation in progress\n'
+        if(status.gSTA == 2):
+            output = 'Not used\n'
+        if(status.gSTA == 3):
+            output = 'activate'
+
+        #gOBJ
+        if(status.gOBJ == 0):
+            output = 'Fingers are in motion (only meaningful if gGTO = 1)\n'
+        if(status.gOBJ == 1):
+            output = 'Fingers have stopped due to a contact while opening\n'
+        if(status.gOBJ == 2):
+            output = 'close'
+        if(status.gOBJ == 3):
+            output = 'open'
+    
+        if(status.gFLT == 0x05):
+            output = 'Priority Fault: Action delayed, initialization must be completed prior to action\n'
+        if(status.gFLT == 0x07):
+            output = 'Priority Fault: The activation bit must be set prior to action\n'
+        if(status.gFLT == 0x09):
+            output = 'Minor Fault: The communication chip is not ready (may be booting)\n'   
+        if(status.gFLT == 0x0B):
+            output = 'Minor Fault: Automatic release in progress\n'
+        if(status.gFLT == 0x0E):
+            output = 'Major Fault: Overcurrent protection triggered\n'
+        if(status.gFLT == 0x0F):
+            output = 'Major Fault: Automatic release completed\n'
+        rospy.loginfo(output)
+        return output
+
 
     def send_gripper_command(self, action_type):
         #Sendet Befehle an den Greifer
@@ -464,8 +536,7 @@ class GripperController:
             self.command.rACT = 0
         self.pub.publish(self.command)
         rospy.sleep(2)
-        #return self.status_listener(action_type)
-        return True
+        return action_type == self.statusInterpreter
 
 #======Get Hum Data======
 
@@ -477,11 +548,40 @@ class get_Hum_mertics:
         self.shoulderkoords = [0.0, 0.0, 0.0]
         self.elbowkoords =    [0.0, 0.0, 0.0]
         self.handkoords =     [0.0, 0.0, 0.0]
+        self.rightshoulderkoords = [0.0, 0.0, 0.0]
+        self.rightelbowkoords =    [0.0, 0.0, 0.0]
+        self.righthandkoords =     [0.0, 0.0, 0.0]
+        self.leftshoulderkoords = [0.0, 0.0, 0.0]
+        self.leftelbowkoords =    [0.0, 0.0, 0.0]
+        self.lefthandkoords =     [0.0, 0.0, 0.0]
         self.inside_norm_upper = True
         self.inside_norm_fore  = True
         self.calc_arm_lenght()
         self.stop_event = threading.Event()
+
     def camera_listener(self):
+    #lese tf für Schulter Elebogen und Hand aus
+        try:
+
+            time = rospy.Time(0)
+            listener = tf.TransformListener()
+
+            listener.waitForTransform("base", "shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "elbow",    time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "hand",     time, rospy.Duration(1.0))
+
+            shoulder_trans, _ = listener.lookupTransform("base", "shoulder",  time)
+            elbow_trans,    _ = listener.lookupTransform("base", "elbow",     time)
+            hand_trans,     _ = listener.lookupTransform("base", "hand",      time)
+
+            self.shoulderkoords =   [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
+            self.elbowkoords =      [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
+            self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
+
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logwarn(f"TF Error: {e}")
+    
+    def camera_listener_arms(self):
     #lese tf für Schulter Elebogen und Hand aus
         try:
 
@@ -492,28 +592,40 @@ class get_Hum_mertics:
             listener.waitForTransform("base", "right_elbow",    time, rospy.Duration(1.0))
             listener.waitForTransform("base", "right_hand",     time, rospy.Duration(1.0))
 
-            shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder",  time)
-            elbow_trans,    _ = listener.lookupTransform("base", "right_elbow",     time)
-            hand_trans,     _ = listener.lookupTransform("base", "right_hand",      time)
+            right_shoulder_trans, _ = listener.lookupTransform("base", "right_shoulder",  time)
+            right_elbow_trans,    _ = listener.lookupTransform("base", "right_elbow",     time)
+            right_hand_trans,     _ = listener.lookupTransform("base", "right_hand",      time)
 
-            self.shoulderkoords =   [shoulder_trans[0], shoulder_trans[1], shoulder_trans[2]]
-            self.elbowkoords =      [elbow_trans[0], elbow_trans[1], elbow_trans[2]]
-            self.handkoords =       [hand_trans[0], hand_trans[1], hand_trans[2]]
+            self.rightshoulderkoords =   [right_shoulder_trans[0],  right_shoulder_trans[1], right_shoulder_trans[2]]
+            self.rightelbowkoords =      [right_elbow_trans[0],     right_elbow_trans[1],    right_elbow_trans[2]]
+            self.righthandkoords =       [right_hand_trans[0],      right_hand_trans[1],     right_hand_trans[2]]
+
+            listener.waitForTransform("base", "left_shoulder", time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "left_elbow",    time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "left_hand",     time, rospy.Duration(1.0))
+
+            left_shoulder_trans, _ = listener.lookupTransform("base", "left_shoulder",  time)
+            left_elbow_trans,    _ = listener.lookupTransform("base", "left_elbow",     time)
+            left_hand_trans,     _ = listener.lookupTransform("base", "left_hand",      time)
+
+            self.leftshoulderkoords =   [left_shoulder_trans[0], left_shoulder_trans[1], left_shoulder_trans[2]]
+            self.leftelbowkoords =      [left_elbow_trans[0],    left_elbow_trans[1],    left_elbow_trans[2]]
+            self.lefthandkoords =       [left_hand_trans[0],     left_hand_trans[1],     left_hand_trans[2]]
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"TF Error: {e}")
 
     def calc_arm_lenght(self):
     #bestimme ober und unterarm länge
-
         self.camera_listener()
-        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
-        self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
+        self.camera_listener_arms()
+        self.uperarmlenght = self.calc_euclidean_distance(self.leftshoulderkoords,  self.leftelbowkoords)
+        self.forearmlenght = self.calc_euclidean_distance(self.lefthandkoords,      self.leftelbowkoords)
         self.is_inside_norm()
 
-        with open('armlängen.csv', 'a', newline='') as f:
+        with open('armlaengen.csv', 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge:{self.uperarmlenght}'])
+            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
             writer.writerow([f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
 
     def calc_euclidean_distance(self, point1, point2):
@@ -524,6 +636,14 @@ class get_Hum_mertics:
             distance += (point2[i] - point1[i]) ** 2
         return math.sqrt(distance)
     
+    def calc_angel(self, point1, point2, point3):
+        vec1  = point1-point2
+        vec2  = point2-point3
+
+        angelrad = np.arccos(np.dot(vec1,vec2)/ (np.sqrt((vec1*vec1).sum())*np.sqrt((vec2*vec2).sum())))
+        angle = angelrad * 360 / 2 / np.pi
+        return angle
+
     def is_inside_norm(self):
         #Überprüft ob Ober und Unterarm innerhalb des 5. und 95 Perzentil sind
 
@@ -538,32 +658,29 @@ class get_Hum_mertics:
         else:
             rospy.logwarn(f"Unterarmmaße sind außerhalb 5. bis 95 Perzentil")
             self.inside_norm_fore = False
-
+    
     def get_arm_angels(self):
 
         while not self.stop_event.is_set():
-            self.camera_listener()
+            self.camera_listener_arms()
 
-            shoulder = np.array([self.shoulderkoords[0],self.shoulderkoords[1],self.shoulderkoords[2]])
-            elbow = np.array([self.elbowkoords[0],self.elbowkoords[1],self.elbowkoords[2]])
-            hand = np.array([self.handkoords[0],self.handkoords[1],self.handkoords[2]])
+            right_shoulder = np.array([self.rightshoulderkoords[0],self.rightshoulderkoords[1],self.rightshoulderkoords[2]])
+            right_elbow = np.array([self.rightelbowkoords[0],self.rightelbowkoords[1],self.rightelbowkoords[2]])
+            right_hand = np.array([self.righthandkoords[0],self.righthandkoords[1],self.righthandkoords[2]])
 
+            left_shoulder = np.array([self.leftshoulderkoords[0],self.leftshoulderkoords[1],self.leftshoulderkoords[2]])
+            left_elbow = np.array([self.leftelbowkoords[0],self.leftelbowkoords[1],self.leftelbowkoords[2]])
+            left_hand = np.array([self.lefthandkoords[0],self.lefthandkoords[1],self.lefthandkoords[2]])
 
-            self.oberarmvec  = shoulder-elbow
-            self.unterarmvec = elbow-hand
+            right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
+            left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
 
-            elbowrad = np.arccos(np.dot(self.oberarmvec,self.unterarmvec)/ (np.sqrt((self.oberarmvec*self.oberarmvec).sum())*np.sqrt((self.unterarmvec*self.unterarmvec).sum())))
-            elbowangle = elbowrad * 360 / 2 / np.pi
-            print(elbowangle, end='\r') 
+            print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
             with open('armlaengen.csv','a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel: {elbowangle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel links: {left_angle}'])
             #return elbowangle
-
-
-
-
-
 
 robot_control = RobotControl("manipulator")
 
@@ -768,7 +885,6 @@ class PCB2PickUpAndPositioning(smach.State):
                 print("Exiting")
                 return 'succeeded' 
 
-
 class BatteryPickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
@@ -794,14 +910,12 @@ class BatteryPickUpAndPositioning(smach.State):
                 print("Exiting")
                 return 'succeeded' 
 
-
 class Aborted(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded_end'])
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         return 'succeeded_end'
-
 
 if __name__ == "__main__":
 
@@ -859,4 +973,3 @@ if __name__ == "__main__":
     # Führe die Statemachine aus
     outcome = sm.execute()
     rospy.spin() 
-

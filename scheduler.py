@@ -329,7 +329,7 @@ class RobotControl:
         
         broadcaster = tf.TransformBroadcaster()
         listener = tf.TransformListener()  
-            #hand_over_position = Pose()
+        hm=[]
         for i in range(2):
             for sek in range(10):
                 hm = get_Hum_mertics()

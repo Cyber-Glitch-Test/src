@@ -19,6 +19,10 @@ from moveit_commander.move_group import MoveGroupCommander # type: ignore
 from moveit_commander import PlanningSceneInterface # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_output as outputMsg # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input as inputMsg # type: ignore
+from moveit_msgs.msg import RobotTrajectory # type: ignore
+from trajectory_msgs.msg import JointTrajectoryPoint # type: ignore
+from std_msgs.msg import String # type: ignore
+from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg # type: ignore
 
 
 #======Konstanten====== 
@@ -440,6 +444,59 @@ class RobotControl:
             return False
         
         return True
+    def pick_up_plan(self,target):
+
+
+        over_target = target.copy()
+        over_target[2] = over_target[2] + 0.1  
+        return [
+        {"type": "cartesian", "pose": self.convert_to_pose(over_target)},
+        {"type": "gripper", "action": 'open'},
+        {"type": "cartesian", "pose": self.convert_to_pose(target)},
+        {"type": "gripper", "action": 'close'},
+        {"type": "cartesian", "pose": self.convert_to_pose(over_target)}]
+        
+    
+    def planner(self,command_list):
+        trajectory = RobotTrajectory()
+        joint_trajectory = trajectory.joint_trajectory
+        joint_trajectory.joint_names = self.move_group.get_joints()
+        waypoints = []
+        for command in command_list:
+            try:
+                if command['type'] == 'cartesian':
+                    waypoints.append(command['pose'])
+                elif command['type'] == 'joint':
+                    self.move_group.set_joint_value_target(command['joints'])
+                    plan = self.move_group.plan()
+                    if plan and plan[0]:
+                        if not self.move_group.execute(plan[1], wait=True):
+                            return False
+                    else:
+                        rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
+                        return False
+                elif command['type'] == 'gripper':
+                    (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+                    if fraction < 1.0:
+                        self.move_group.execute(plan, wait=True)
+                    else:
+                        rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+                        return False
+                    if not self.gripper_controller.send_gripper_command(command['action']):
+                        return False
+            except Exception as e:
+                rospy.logerr(f"Fehler beim Verarbeiten des Befehls: {e}")
+                return False
+        
+        if waypoints:
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+            if fraction < 1.0:
+                if not self.move_group.execute(plan, wait=True):
+                    return False 
+            else:
+                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+                return False
+        return True
 
 #======Gripper Control======
 
@@ -657,7 +714,7 @@ robot_control = RobotControl("manipulator")
 
 class Start(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end'])
+        smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end','test'])
     def execute(self, userdata):
         rospy.loginfo(f"Executing state: {self.__class__.__name__}")
         print("\n--- Hauptmenü ---")
@@ -668,6 +725,7 @@ class Start(smach.State):
         print("5. PCB2PickUpAndPositioning")
         print("6. BatteryPickUpAndPositioning")
         print("7. succeeded_end")
+        print("8. Test")
 
         start = input("Please choose start Class: ")
         while True:
@@ -689,9 +747,12 @@ class Start(smach.State):
             elif start == "6":
                 print("\nYou have choosen BatteryPickUpAndPositioning.")
                 return 'BatteryPickUpAndPositioning'
-            elif start == "6":
+            elif start == "7":
                 print("\nYou have choosen Abort.")
                 return 'succeeded_end'
+            elif start == "8":
+                print("\nYou have choosen Test.")
+                return 'test'
             else:
                 print("\n {start} gibts nicht. try again.")
 
@@ -905,6 +966,39 @@ class Aborted(smach.State):
             elif newuser == "n":
                 return 'succeeded_end'
 
+class Test(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded_end','aborted'])
+    def execute(self, userdata):
+        rospy.loginfo(f"Executing state: {self.__class__.__name__}")
+        while True:
+            newuser = input('neuer Versuch? y/n: ')
+            if newuser == "y":
+                command_list = [
+                    {
+                        "type": "joint",
+                        "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
+                    },{
+                        "type": "gripper",
+                        "action": 'close' 
+                    },{
+                        "type": "gripper",
+                        "action": 'open'  
+                    },{
+                        "type": "cartesian",
+                        "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
+                    },{
+                        "type": "joint",
+                        "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
+                    }
+                ]
+                command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
+                robot_control.planner(command_list)
+                return 'succeeded_end'
+
+            elif newuser == "n":
+                return 'aborted'
+
 
 if __name__ == "__main__":
 
@@ -925,6 +1019,7 @@ if __name__ == "__main__":
                                             'PCB1PickUpAndPositioning':'PCB1PickUpAndPositioning',
                                             'PCB2PickUpAndPositioning':'PCB2PickUpAndPositioning',
                                             'BatteryPickUpAndPositioning':'BatteryPickUpAndPositioning',
+                                            'test':'Test',
                                             'succeeded_end':'finished'})
         smach.StateMachine.add('MPickUp', MPickUp(),
                                transitions={'succeeded':'MHold',
@@ -951,6 +1046,9 @@ if __name__ == "__main__":
                                transitions={'succeeded_end':'finished',
                                             'aborted':'Aborted',
                                             'succeeded':'MPickUp'})
+        smach.StateMachine.add('Test', Test(),
+                               transitions={'succeeded_end':'finished',
+                                            'Aborted':'Aborted'})
         smach.StateMachine.add('Aborted', Aborted(),
                                transitions={'succeeded_end':'finished',
                                             'succeeded':'MPickUp'})

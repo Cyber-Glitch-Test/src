@@ -12,7 +12,7 @@ import copy
 import time
 import csv
 import threading
-from my_robot_msgs.msg import RobotCommand
+from schledluer.msg import robot_msgs
 from tf.transformations import quaternion_from_euler  # type: ignore
 from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
@@ -106,7 +106,7 @@ savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
 
-use_built_in_rb_control = True
+use_built_in_rb_control = False
 
 #======Robot Control Class======
 
@@ -114,72 +114,74 @@ class RobotControl:
     
     def __init__(self, group_name):
 
+        if not use_built_in_rb_control:       
 
-        #Initialisiert die MoveIt-Gruppe und die Greifer-Node
-        self.group_name = group_name
-        self.move_group = MoveGroupCommander(self.group_name)
-        self.gripper_controller = GripperController()
-        self.scene = PlanningSceneInterface()
-        self.robot = moveit_commander.RobotCommander()
+            #Initialisiert die MoveIt-Gruppe und die Greifer-Node
+            self.group_name = group_name
+            self.move_group = MoveGroupCommander(self.group_name)
+            self.gripper_controller = GripperController()
+            self.scene = PlanningSceneInterface()
+            self.robot = moveit_commander.RobotCommander()
 
-        rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
+            rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
 
-        
+            
 
-        # Tischfläche in MoveIt zur Kollisionserkennung hinzufügen
-        planning_frame = self.move_group.get_planning_frame()
-        rospy.loginfo("Planungsrahmen: %s", planning_frame)
+            # Tischfläche in MoveIt zur Kollisionserkennung hinzufügen
+            planning_frame = self.move_group.get_planning_frame()
+            rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
-        Tisch = PoseStamped()
-        Tisch.header.frame_id = planning_frame
-        Tisch.pose.position.x = 0.0
-        Tisch.pose.position.y = 0.0
-        Tisch.pose.position.z = -0.09 
-        
-        self.scene.add_box("Tisch", Tisch, size=(3, 2, 0.05))
-        rospy.loginfo("Tisch wurde Planungszene hinzugefügt.")
+            Tisch = PoseStamped()
+            Tisch.header.frame_id = planning_frame
+            Tisch.pose.position.x = 0.0
+            Tisch.pose.position.y = 0.0
+            Tisch.pose.position.z = -0.09 
+            
+            self.scene.add_box("Tisch", Tisch, size=(3, 2, 0.05))
+            rospy.loginfo("Tisch wurde Planungszene hinzugefügt.")
 
-        Wand_links = PoseStamped()
-        Wand_links.header.frame_id = planning_frame 
-        Wand_links.pose.position.x = -0.37
-        Wand_links.pose.position.y = 0.00
-        Wand_links.pose.position.z = 0.00 
-        
-        self.scene.add_box("Wand_links", Wand_links, size=(0.05, 3, 3))
-        rospy.loginfo("Wand_links wurde Planungszene hinzugefügt")
+            Wand_links = PoseStamped()
+            Wand_links.header.frame_id = planning_frame 
+            Wand_links.pose.position.x = -0.37
+            Wand_links.pose.position.y = 0.00
+            Wand_links.pose.position.z = 0.00 
+            
+            self.scene.add_box("Wand_links", Wand_links, size=(0.05, 3, 3))
+            rospy.loginfo("Wand_links wurde Planungszene hinzugefügt")
 
-        Wand_hinten = PoseStamped()
-        Wand_hinten.header.frame_id = planning_frame 
-        Wand_hinten.pose.position.x = 0.00
-        Wand_hinten.pose.position.y = 0.34
-        Wand_hinten.pose.position.z = 0.00 
-        
-        self.scene.add_box("Wand_hinten", Wand_hinten, size=(3, 0.05, 3))
-        rospy.loginfo("Wand_hinten wurde Planungszene hinzugefügt")
+            Wand_hinten = PoseStamped()
+            Wand_hinten.header.frame_id = planning_frame 
+            Wand_hinten.pose.position.x = 0.00
+            Wand_hinten.pose.position.y = 0.34
+            Wand_hinten.pose.position.z = 0.00 
+            
+            self.scene.add_box("Wand_hinten", Wand_hinten, size=(3, 0.05, 3))
+            rospy.loginfo("Wand_hinten wurde Planungszene hinzugefügt")
 
-        Decke = PoseStamped()
-        Decke.header.frame_id = planning_frame  
-        Decke.pose.position.x = 0.0
-        Decke.pose.position.y = 0.0
-        Decke.pose.position.z = 0.92 
-        
-        self.scene.add_box("Decke", Decke, size=(3, 2, 0.05))
-        rospy.loginfo("Decke wurde Planungszene hinzugefügt.")
+            Decke = PoseStamped()
+            Decke.header.frame_id = planning_frame  
+            Decke.pose.position.x = 0.0
+            Decke.pose.position.y = 0.0
+            Decke.pose.position.z = 0.92 
+            
+            self.scene.add_box("Decke", Decke, size=(3, 2, 0.05))
+            rospy.loginfo("Decke wurde Planungszene hinzugefügt.")
 
-        Halter_Grundplatte = PoseStamped()
-        Halter_Grundplatte.header.frame_id = planning_frame  
-        Halter_Grundplatte.pose.position.x = 2*0.28
-        Halter_Grundplatte.pose.position.y = -0.59
-        Halter_Grundplatte.pose.position.z = -0.04
-        
-        self.scene.add_box("Halter_Grundplatte", Halter_Grundplatte, size=(0.60, 0.22, 0.22))
-        rospy.loginfo("Halter_Grundplatte wurde Planungszene hinzugefügt.")
+            Halter_Grundplatte = PoseStamped()
+            Halter_Grundplatte.header.frame_id = planning_frame  
+            Halter_Grundplatte.pose.position.x = 2*0.28
+            Halter_Grundplatte.pose.position.y = -0.59
+            Halter_Grundplatte.pose.position.z = -0.04
+            
+            self.scene.add_box("Halter_Grundplatte", Halter_Grundplatte, size=(0.60, 0.22, 0.22))
+            rospy.loginfo("Halter_Grundplatte wurde Planungszene hinzugefügt.")
 
-        eef_link = self.move_group.get_end_effector_link()
-        rospy.loginfo("Endeffektor-Link: %s", eef_link)
+            eef_link = self.move_group.get_end_effector_link()
+            rospy.loginfo("Endeffektor-Link: %s", eef_link)
 
-        self.move_group.set_max_velocity_scaling_factor(0.1)
-        self.move_group.set_max_acceleration_scaling_factor(0.1)
+            self.move_group.set_max_velocity_scaling_factor(0.1)
+            self.move_group.set_max_acceleration_scaling_factor(0.1)
+
 
         while True:
             user = input('Gebe initialen ein: ')
@@ -214,7 +216,7 @@ class RobotControl:
 
     def move_to_target(self, target_pose, speed):
         if not use_built_in_rb_control:
-            command = {'type':'p2p','pose':target_pose}
+            command = [{'type':'p2p','pose':target_pose}] 
             self.publish_rb_cmds(command)
             return True
         
@@ -236,7 +238,7 @@ class RobotControl:
     def move_to_target_carth(self, target_pose, speed):
         #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         if not use_built_in_rb_control:
-            command = {'type':'cartesian','pose':target_pose}
+            command = [{'type':'cartesian','pose':target_pose}]
             self.publish_rb_cmds(command)
             return True
 
@@ -262,7 +264,7 @@ class RobotControl:
         #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         if not use_built_in_rb_control:
             for pose in waypoints:
-                command = {'type':'cartesian','pose':pose}
+                command = [{'type':'cartesian','pose':pose}]
                 self.publish_rb_cmds(command)
                 return True
 
@@ -286,7 +288,7 @@ class RobotControl:
 
         if not use_built_in_rb_control:
             for pose in waypoints:
-                command = {'type':'p2p','pose':pose}
+                command = [{'type':'p2p','pose':pose}]
                 self.publish_rb_cmds(command)
                 return True
             
@@ -306,7 +308,9 @@ class RobotControl:
         #Bewegt den Roboter zu einem Gelenkwinkel
 
         if not use_built_in_rb_control:
-            command = {'type':'joint','pose':joint_goal}
+            command = [{'type':'joint','joints':joint_goal}]
+            rospy.loginfo(type(command))
+            rospy.loginfo(command)
             self.publish_rb_cmds(command)
             return True
 
@@ -462,9 +466,13 @@ class RobotControl:
         over_target[2] = over_target[2] + 0.1  
         
         if not use_built_in_rb_control:
-            command =   [{'type':'p2p','pose':over_target},
-                         {'type':'cartesian','pose':target},
-                         {'type':'cartesian','pose':over_target}]
+            over_target_pose = self.convert_to_pose(over_target)
+            target_pose = self.convert_to_pose(target)
+
+            command =   [{'type':'p2p','pose':over_target_pose},
+                         {'type':'cartesian','pose':target_pose},
+
+                         {'type':'cartesian','pose':over_target_pose}]
             
             self.publish_rb_cmds(command)
             return True
@@ -534,7 +542,7 @@ class RobotControl:
                     
                 #gripper bewegen
                 elif command['type'] == 'gripper':
-                    (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+                    (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
                     if fraction < 1.0:
                         self.move_group.execute(plan, wait=True)
                     else:
@@ -547,7 +555,7 @@ class RobotControl:
                 return False
         
         if waypoints:
-            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
             if fraction < 1.0:
                 if not self.move_group.execute(plan, wait=True):
                     return False 
@@ -557,16 +565,16 @@ class RobotControl:
         return True
 
     def publish_rb_cmds(self,commands):
+        cmd_nr = 0
         for cmd in commands:
-            msg = RobotCommand()
-            command_pub = rospy.Publisher('/robot/command', RobotCommand, queue_size=10)
-            msg.type = cmd["type"]
+            msg = robot_msgs()
+            command_pub = rospy.Publisher('/robot/command', robot_msgs, queue_size=10)
 
+            rospy.loginfo(type(cmd))
+            msg.nr = cmd_nr
+            msg.type = cmd["type"]
             if cmd["type"] == "joint":
                 msg.joints = list(cmd["joints"])
-
-            elif cmd["type"] == "gripper":
-                msg.action = cmd["action"]
 
             elif cmd["type"] == "cartesian":
                 msg.pose = cmd["pose"]
@@ -574,8 +582,10 @@ class RobotControl:
             elif cmd["type"] == "p2p":
                 msg.pose = cmd["pose"]
 
-            command_pub.publish(msg)
             rospy.loginfo(f"Published command: {msg}")
+
+            command_pub.publish(msg)
+            cmd_nr += 1
             rospy.sleep(1) 
 #======Gripper Control======
 
@@ -843,8 +853,8 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
-        if not robot_control.gripper_controller.send_gripper_command('activate'):
-            return 'aborted'
+        #if not robot_control.gripper_controller.send_gripper_command('activate'):
+        #    return 'aborted'
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -1050,34 +1060,55 @@ class Test(smach.State):
         smach.State.__init__(self, outcomes=['succeeded_end','aborted'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-        while True:
-            newuser = input('neuer Versuch? y/n: ')
-            if newuser == "y":
-                command_list = [
-                    {
-                        "type": "joint",
-                        "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
-                    },{
-                        "type": "gripper",
-                        "action": 'close' 
-                    },{
-                        "type": "gripper",
-                        "action": 'open'  
-                    },{
-                        "type": "cartesian",
-                        "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
-                    },{
-                        "type": "joint",
-                        "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
-                    }
+        newuser = input('start? y/n: ')
+        if newuser == "y":
+            command_list = [
+                {
+                    "type": "joint",
+                    "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
+                },
+                {
+                    "type": "gripper",
+                    "action": 'close' 
+                },{
+                    "type": "gripper",
+                    "action": 'open'  
+                },
+                {
+                    "type": "cartesian",
+                    "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
+                },{
+                    "type": "joint",
+                    "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
+                }
                 ]
-                command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
-                robot_control.planner(command_list)
-                return 'succeeded_end'
+            command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
+            robot_control.planner(command_list)
+            return 'succeeded_end'
 
-            elif newuser == "n":
-                return 'aborted'
-
+            # newuser = input('neuer Versuch? y/n: ')
+            # if newuser == "y":
+            #     command_list = [
+            #         {
+            #             "type": "joint",
+            #             "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
+            #         },{
+            #             "type": "gripper",
+            #             "action": 'close' 
+            #         },{
+            #             "type": "gripper",
+            #             "action": 'open'  
+            #         },{
+            #             "type": "cartesian",
+            #             "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
+            #         },{
+            #             "type": "joint",
+            #             "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
+            #         }
+            #     ]
+            #     command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
+            #     robot_control.planner(command_list)
+            #     return 'succeeded_end'
 
 if __name__ == "__main__":
 
@@ -1126,7 +1157,7 @@ if __name__ == "__main__":
                                             'succeeded':'MPickUp'})
         smach.StateMachine.add('Test', Test(),
                                transitions={'succeeded_end':'finished',
-                                            'Aborted':'Aborted'})
+                                            'aborted':'Aborted'})
         smach.StateMachine.add('Aborted', Aborted(),
                                transitions={'succeeded_end':'finished',
                                             'succeeded':'MPickUp'})
@@ -1141,4 +1172,3 @@ if __name__ == "__main__":
     # Führe die Statemachine aus
     outcome = sm.execute()
     rospy.spin() 
-

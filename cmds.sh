@@ -10,7 +10,6 @@ chmod +x /home/ca/catkin_ws/src/schledluer/src/smach_ros_moveit.py
 
 rosrun schledluer smach_ros_moveit.py
 
-
 #############################################################
 
 source /home/ca/catkin_ws/devel/setup.bash
@@ -94,7 +93,6 @@ source /home/ca/catkin_ws/devel/setup.bash
 chmod +x /home/ca/catkin_ws/src/schledluer/src/tracking_test.py
 
 rosrun schledluer tracking_test.py
-
 
 #Get koords
 

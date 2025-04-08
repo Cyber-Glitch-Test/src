@@ -506,11 +506,8 @@ class RobotControl:
         {"type": "gripper", "action": 'close'},
         {"type": "cartesian", "pose": self.convert_to_pose(over_target)}]
         
-    def planner(self,command_list):
-        #planner funktion für die ausführung von verschiedenen bewegungen
-        trajectory = RobotTrajectory()
-        joint_trajectory = trajectory.joint_trajectory
-        joint_trajectory.joint_names = self.move_group.get_joints()
+    def planner(self, command_list, speed):
+        self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
         for command in command_list:
             try:
@@ -518,51 +515,52 @@ class RobotControl:
                 if command['type'] == 'cartesian':
                     waypoints.append(command['pose'])
 
-                #bewegung zu Gelenkwinkel
-                elif command['type'] == 'joint':
-                    self.move_group.set_joint_value_target(command['joints'])
-                    plan = self.move_group.plan()
-                    if plan and plan[0]:
-                        if not self.move_group.execute(plan[1], wait=True):
+                else:
+                    # Wenn kartesische Waypoints da sind, führe sie zuerst aus
+                    if waypoints:
+                        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+                        if fraction < 1.0:
+                            rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
                             return False
-                    else:
-                        rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
-                        return False
-                    
-                #bewegung zu pose
-                elif command['type'] == 'p2p':
-                    self.move_group.set_pose_target(command['pose'])
-                    plan = self.move_group.plan()
-                    if plan and plan[0]:
-                        if not self.move_group.execute(plan[1], wait=True):
+                        if not self.move_group.execute(plan, wait=True):
                             return False
-                    else:
-                        rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
-                        return False
-                    
-                #gripper bewegen
-                elif command['type'] == 'gripper':
-                    (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
-                    if fraction < 1.0:
+                        waypoints = []  # zurücksetzen!
+
+                    if ctype == "joint":
+                        self.move_group.set_joint_value_target(command["joints"])
+                        plan = self.move_group.plan()
+                        if not plan or not plan.joint_trajectory.points:
+                            rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
+                            return False
                         self.move_group.execute(plan, wait=True)
-                    else:
-                        rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
-                        return False
-                    if not self.gripper_controller.send_gripper_command(command['action']):
-                        return False
+
+                    elif ctype == "p2p":
+                        self.move_group.set_pose_target(command["pose"])
+                        plan = self.move_group.plan()
+                        if not plan or not plan.joint_trajectory.points:
+                            rospy.logwarn("P2P Bewegung konnte nicht geplant werden.")
+                            return False
+                        self.move_group.execute(plan, wait=True)
+
+                    elif ctype == "gripper":
+                        if not self.gripper_controller.send_gripper_command(command["action"]):
+                            return False
+
             except Exception as e:
                 rospy.logerr(f"Fehler beim Verarbeiten des Befehls: {e}")
                 return False
-        
+
+        # Am Ende evtl. noch übrig gebliebene kartesische Bewegungen ausführen
         if waypoints:
-            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
+            (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
             if fraction < 1.0:
-                if not self.move_group.execute(plan, wait=True):
-                    return False 
-            else:
-                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+                rospy.logwarn("Letzte kartesische Bewegung konnte nicht vollständig geplant werden.")
                 return False
+            if not self.move_group.execute(plan, wait=True):
+                return False
+
         return True
+
 
     def publish_rb_cmds(self,commands):
         cmd_nr = 0
@@ -587,6 +585,56 @@ class RobotControl:
             command_pub.publish(msg)
             cmd_nr += 1
             rospy.sleep(1) 
+            cmd_nr +=1
+
+    # def listener_rb_cmds(self):
+    #     rospy.Subscriber('/robot/command', RobotCommand, command_callback)
+
+    #def command_callback(self,msg):
+        #do something
+
+    def place_on_board(self,target,speed):
+        next_board = copy(target)
+        over_board = copy(target)
+        next_board[1] = next_board[1] - 0.2
+        next_board[2] = next_board[2] + 0.04
+        over_board[2] = over_board[2] + 0.04
+        
+        if not use_built_in_rb_control:
+            command1 =   [{'type':'cartesian','pose':next_board},
+                         {'type':'cartesian','pose':over_board},
+                         {'type':'cartesian','pose':target}]
+            
+            self.publish_rb_cmds(command1)
+
+            if not self.gripper_controller.send_gripper_command('open'):
+                return False
+            
+            command2 =   [{'type':'cartesian','pose':over_board},
+                         {'type':'cartesian','pose':next_board}]
+
+            self.publish_rb_cmds(command2)
+            return True
+
+        plan1 = []
+        plan1.append(self.convert_to_pose(next_board))
+        plan1.append(self.convert_to_pose(over_board))
+        plan1.append(self.convert_to_pose(target))
+
+        plan2 = []
+        plan2.append(self.convert_to_pose(over_board))
+        plan2.append(self.convert_to_pose(next_board))
+
+        if not self.move_to_target_carth_plan(plan1,speed):
+            return False
+        if not self.gripper_controller.send_gripper_command('open'):
+            return False
+        if not self.move_to_target_carth_plan(plan2,speed):
+            return False
+
+
+
+
 #======Gripper Control======
 
 class GripperController:
@@ -853,8 +901,8 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
-        #if not robot_control.gripper_controller.send_gripper_command('activate'):
-        #    return 'aborted'
+        if not robot_control.gripper_controller.send_gripper_command('activate'):
+            return 'aborted'
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -957,18 +1005,7 @@ class PCB1PickUpAndPositioning(smach.State):
                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb1[self.counter]):
                     return 'aborted'
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_1))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_2))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_3))
-                if not robot_control.move_to_target_carth_plan(plan,10):
-                    return 'aborted'
-                if not robot_control.gripper_controller.send_gripper_command('open'):
-                    return 'aborted'
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_2))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb1_1))
-                if not robot_control.move_to_target_carth_plan(plan,10):
+                if not robot_control.place_on_board(rb_arm_transition_over_gb1_3,10):
                     return 'aborted'
                 self.counter +=1
                 return 'succeeded'
@@ -1060,55 +1097,34 @@ class Test(smach.State):
         smach.State.__init__(self, outcomes=['succeeded_end','aborted'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-        newuser = input('start? y/n: ')
-        if newuser == "y":
-            command_list = [
-                {
-                    "type": "joint",
-                    "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
-                },
-                {
-                    "type": "gripper",
-                    "action": 'close' 
-                },{
-                    "type": "gripper",
-                    "action": 'open'  
-                },
-                {
-                    "type": "cartesian",
-                    "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
-                },{
-                    "type": "joint",
-                    "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
-                }
+        while True:
+            newuser = input('neuer Versuch? y/n: ')
+            if newuser == "y":
+                command_list = [
+                    {
+                        "type": "joint",
+                        "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
+                    },{
+                        "type": "gripper",
+                        "action": 'close' 
+                    },{
+                        "type": "gripper",
+                        "action": 'open'  
+                    },{
+                        "type": "cartesian",
+                        "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
+                    },{
+                        "type": "joint",
+                        "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
+                    }
                 ]
-            command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
-            robot_control.planner(command_list)
-            return 'succeeded_end'
+                command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
+                robot_control.planner(command_list,10)
+                return 'succeeded_end'
 
-            # newuser = input('neuer Versuch? y/n: ')
-            # if newuser == "y":
-            #     command_list = [
-            #         {
-            #             "type": "joint",
-            #             "joints": (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643)
-            #         },{
-            #             "type": "gripper",
-            #             "action": 'close' 
-            #         },{
-            #             "type": "gripper",
-            #             "action": 'open'  
-            #         },{
-            #             "type": "cartesian",
-            #             "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
-            #         },{
-            #             "type": "joint",
-            #             "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
-            #         }
-            #     ]
-            #     command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
-            #     robot_control.planner(command_list)
-            #     return 'succeeded_end'
+            elif newuser == "n":
+                return 'aborted'
+
 
 if __name__ == "__main__":
 

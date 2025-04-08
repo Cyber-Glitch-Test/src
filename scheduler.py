@@ -25,10 +25,10 @@ from trajectory_msgs.msg import JointTrajectoryPoint # type: ignore
 from std_msgs.msg import String # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg # type: ignore
 
-
+#test
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [-0.0017881569928987558, -0.6960133488624333, 0.7180244453880938, 0.0017653682307088938]
+tcp_to_hum = [0.4746989713583776, 0.5086510395580778, -0.5204142313976312, 0.49507982619633983]
 
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
@@ -58,11 +58,11 @@ rb_arm_transition_over_pcb1 =   np.array([0.7371109279194257, -0.124055346565514
 rb_arm_transition_over_pcb2 =   np.array([0.39299783753064255, -0.25037007326362604, 0.4098002793824048  ,0.9994996999243878, 0.018132610811126923, -0.01488422170868633, 0.021213632889197198])
 
 rb_arm_transition_over_gb0_1 =  np.array([0.43920883565114404, -0.27118297223348553, 0.21533919567733978,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
-rb_arm_transition_over_gb0_2 =  np.array([0.43920912923516957, -0.21053279915028705, 0.3005243278363052,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
+rb_arm_transition_over_gb0_2 =  np.array([0.4017174799606998, -0.2181725740604259, 0.2921709170604791, -0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 
-rb_arm_transition_over_gb1_1 =  np.array([0.4384443484397782, -0.33196635637380156, 0.3911058561909323,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
-rb_arm_transition_over_gb1_2 =  np.array([0.4384443484397782, -0.46021622516842065, 0.3910704893338057  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
-rb_arm_transition_over_gb1_3 =  np.array([0.4384443484397782, -0.46018886151503624, 0.35487302405715704  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])
+rb_arm_transition_over_gb1_1 =  np.array([0.4907380230958256, -0.33196635637380156, 0.3911058561909323,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
+rb_arm_transition_over_gb1_2 =  np.array([0.4907380230958256, -0.45983847995419647, 0.3910704893338057  ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
+rb_arm_transition_over_gb1_3 =  np.array([0.4907380230958256, -0.45983847995419647, 0.35395950043452323 ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
 
 rb_arm_transition_over_gb2_1 =  np.array([0.5486854170473805, -0.3885145028949433, 0.3814376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
 rb_arm_transition_over_gb2_2 =  np.array([0.5486854170473805, -0.4685145028949433, 0.3514376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
@@ -78,15 +78,15 @@ rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.168901
                     np.array([0.7416488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
                     np.array([0.7966488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])]
 
-rb_arm_on_pcb2  =  [np.array([0.4165396170280912, -0.2591341631409675, 0.15891605521745683   ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
+rb_arm_on_pcb2  =  [np.array([0.40558901752394194, -0.26155397106696143, 0.15286739666265525   ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
                     np.array([]),
                     np.array([]),
                     np.array([])]
 
-rb_arm_on_battery =[np.array([0.6064043378480363, -0.019193581297668794, 0.15491817631772764   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
-                    np.array([0.6064043378480363,  0.103193581297668794, 0.15491817631772764   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
-                    np.array([0.7079493583489366, -0.019193581297668794, 0.15491817631772764   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696]),
-                    np.array([0.7079493583489366,  0.101393581297668794, 0.15491817631772764   ,0.9995912737424026, 0.012216905158772546, -0.012814390858456945, 0.022446025779846696])]
+rb_arm_on_battery =[np.array([0.6064043378480363, -0.019193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.6064043378480363,  0.103193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.7079493583489366, -0.019193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.7079493583489366,  0.101393581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502])]
 
 
 #Konstanten für ergonomische Berechnungen
@@ -106,7 +106,7 @@ savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
 
-use_built_in_rb_control = False
+use_built_in_rb_control = True
 
 #======Robot Control Class======
 
@@ -114,7 +114,7 @@ class RobotControl:
     
     def __init__(self, group_name):
 
-        if not use_built_in_rb_control:       
+        if use_built_in_rb_control:       
 
             #Initialisiert die MoveIt-Gruppe und die Greifer-Node
             self.group_name = group_name
@@ -365,13 +365,15 @@ class RobotControl:
     def calc_handover_position_schoulder(self):
         #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
         
-        broadcaster = tf.TransformBroadcaster()
-        listener = tf.TransformListener()  
 
-        for i in range(2):
+        for i in range(1):
             for sek in range(10):
+                broadcaster = tf.TransformBroadcaster()
+                listener = tf.TransformListener()  
                 hm = get_Hum_mertics()
-                if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)) and hm.inside_norm_upper and hm.inside_norm_fore:
+                hm.camera_listener()
+                hm.calc_arm_lenght()
+                if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):
                 #if not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and not(all(x == 0 for x in hm.handkoords)):    
                     rospy.loginfo("Schulter, Ellbogen und Hand erkannt")
                     rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
@@ -381,7 +383,7 @@ class RobotControl:
                     translation = [ 0, (hm.forearmlenght + tcp_coversion),- hm.uperarmlenght]
                     break
 
-                elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)) and hm.inside_norm_upper:
+                elif not(all(x == 0 for x in hm.shoulderkoords)) and not(all(x == 0 for x in hm.elbowkoords)):
                     
                     rospy.loginfo("Schulter, Ellbogen erkannt")
                     rospy.loginfo("Unterarmlänge: %s", hm.forearmlenght)
@@ -407,24 +409,26 @@ class RobotControl:
             try:    
                     
                     handover_point = PointStamped()
-                    handover_point.header.frame_id = "right_shoulder"
+                    handover_point.header.frame_id = "shoulder"
                     handover_point.header.stamp = rospy.Time.now() 
                     handover_point.point.x = translation[0]
                     handover_point.point.y = -translation[1]
                     handover_point.point.z = translation[2]
 
-                    time.sleep(3)
-                    listener.waitForTransform("base","right_shoulder", rospy.Time(0), rospy.Duration(1.0))
+                    #time.sleep(3)
+
+                    listener.waitForTransform("base","shoulder", rospy.Time(0), rospy.Duration(4.0))
                         
                     broadcaster.sendTransform(
                         (handover_point.point.x, handover_point.point.y,handover_point.point.z),
                         (0.0, 0.0, 0.0, 1.0),  
                         rospy.Time.now(),
                         "handover_position",
-                        "right_shoulder"
+                        "shoulder"
                     )
-
-                    listener.waitForTransform("base","handover_position", rospy.Time(0), rospy.Duration(1.0))
+                    #time.sleep(3)
+                    #atest_time = listener.getLatestCommonTime("base", "handover_position")
+                    listener.waitForTransform("base","handover_position", rospy.Time(0) , rospy.Duration(4.0))
                     hand_over_position_koords, _ = listener.lookupTransform("base","handover_position",  rospy.Time(0))
 
                     
@@ -434,7 +438,6 @@ class RobotControl:
             except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                     rospy.logwarn(f"Error transforming point: {e}")
 
-            hm = None
             return hand_over_position
         
     def reset_robot(self):
@@ -542,11 +545,13 @@ class RobotControl:
                     
                 #gripper bewegen
                 elif command['type'] == 'gripper':
+
                     (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
-                    if fraction < 1.0:
+                    rospy.logwarn(waypoints)
+                    if fraction == 1.0 and waypoints:
                         self.move_group.execute(plan, wait=True)
-                    else:
-                        rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+                    elif fraction <= 1.0 and waypoints:
+                        rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.bei gripper")
                         return False
                     if not self.gripper_controller.send_gripper_command(command['action']):
                         return False
@@ -556,11 +561,12 @@ class RobotControl:
         
         if waypoints:
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, True)
-            if fraction < 1.0:
+            rospy.logerr(f"Planberechnung: {fraction}")
+            if fraction == 1.0:
                 if not self.move_group.execute(plan, wait=True):
                     return False 
             else:
-                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
+                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.am ende")
                 return False
         return True
 
@@ -591,66 +597,90 @@ class RobotControl:
 
 class GripperController:
     def __init__(self):
-        #Initialisiert den Gripper-Controller
+        #rospy.init_node('gripper_controller')
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
         self.command = outputMsg.Robotiq2FGripper_robot_output()
+        self.current_status = None  # Speichert den aktuellen Status
+        self.gripper_status_sub = rospy.Subscriber(
+            "Robotiq2FGripperRobotInput", 
+            inputMsg.Robotiq2FGripper_robot_input,
+            self.statusInterpreter
+        )
 
-    def statusInterpreter(status):
-        """Generate a string according to the current value of the status variables."""
-        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg.Robotiq2FGripper_robot_input, status)
-        output = ''
-        #gSTA
-        if(status.gSTA == 0):
-            output = 'Gripper is in reset ( or automatic release ) state. see Fault Status if Gripper is activated\n'
-        if(status.gSTA == 1):
-            output = 'Activation in progress\n'
-        if(status.gSTA == 2):
-            output = 'Not used\n'
-        if(status.gSTA == 3):
-            output = 'activate'
+    def statusInterpreter(self, status):
+        """Callback-Funktion für Statusupdates."""
+        self.current_status = status  # Status speichern
+        output = []
+        
+        # gSTA - Gripper status
+        if status.gSTA == 0:
+            output.append('Gripper is in reset (or automatic release) state')
+        elif status.gSTA == 1:
+            output.append('Activation in progress')
+        elif status.gSTA == 2:
+            output.append('Status not used')
+        elif status.gSTA == 3:
+            output.append('Gripper activated')
 
-        #gOBJ
-        if(status.gOBJ == 0):
-            output = 'Fingers are in motion (only meaningful if gGTO = 1)\n'
-        if(status.gOBJ == 1):
-            output = 'Fingers have stopped due to a contact while opening\n'
-        if(status.gOBJ == 2):
-            output = 'close'
-        if(status.gOBJ == 3):
-            output = 'open'
-    
-        if(status.gFLT == 0x05):
-            output = 'Priority Fault: Action delayed, initialization must be completed prior to action\n'
-        if(status.gFLT == 0x07):
-            output = 'Priority Fault: The activation bit must be set prior to action\n'
-        if(status.gFLT == 0x09):
-            output = 'Minor Fault: The communication chip is not ready (may be booting)\n'   
-        if(status.gFLT == 0x0B):
-            output = 'Minor Fault: Automatic release in progress\n'
-        if(status.gFLT == 0x0E):
-            output = 'Major Fault: Overcurrent protection triggered\n'
-        if(status.gFLT == 0x0F):
-            output = 'Major Fault: Automatic release completed\n'
-        rospy.loginfo(output)
-        return output
+        # gOBJ - Object detection
+        if status.gOBJ == 0:
+            output.append('Fingers are in motion')
+        elif status.gOBJ == 1:
+            output.append('Fingers stopped while opening (contact detected)')
+        elif status.gOBJ == 2:
+            output.append('Fingers closed (object detected)' if status.gGTO == 1 else 'Fingers at closed position')
+        elif status.gOBJ == 3:
+            output.append('Fingers fully open')
+
+        # gFLT - Fault status
+        if status.gFLT == 0x05:
+            output.append('PRIORITY FAULT: Action delayed (complete initialization first)')
+        elif status.gFLT == 0x07:
+            output.append('PRIORITY FAULT: Activation required before action')
+        elif status.gFLT == 0x09:
+            output.append('MINOR FAULT: Communication chip not ready')
+        elif status.gFLT == 0x0B:
+            output.append('MINOR FAULT: Automatic release in progress')
+        elif status.gFLT == 0x0E:
+            output.append('MAJOR FAULT: Overcurrent triggered')
+        elif status.gFLT == 0x0F:
+            output.append('MAJOR FAULT: Automatic release completed')
+
+        # Zusätzliche nützliche Info
+        if status.gGTO == 1:
+            output.append('GoTo position command active')
+        
+        status_str = " | ".join(output)
+        #rospy.loginfo(f"Gripper status: {status_str}")
+        return status_str
 
     def send_gripper_command(self, action_type):
-        #Sendet Befehle an den Greifer
-        if action_type == 'open':
-            self.command.rPR = 0
-        elif action_type == 'close':
-            self.command.rPR = 255
-        elif action_type == 'activate':
-            self.command.rACT = 1
-            self.command.rGTO = 1
-            self.command.rSP = 255
-            self.command.rFR = 150
-        elif action_type == 'deactivate':
-            self.command.rACT = 0
-        self.pub.publish(self.command)
-        rospy.sleep(2)
-        return action_type == self.statusInterpreter
+            """Sendet einen Befehl an den Greifer und überprüft danach den Status."""
+            if action_type == 'open':
+                self.command.rPR = 0
+            elif action_type == 'close':
+                self.command.rPR = 255
+            elif action_type == 'activate':
+                self.command.rACT = 1
+                self.command.rGTO = 1
+                self.command.rSP = 255
+                self.command.rFR = 150
+            elif action_type == 'deactivate':
+                self.command.rACT = 0
+            else:
+                rospy.logwarn(f"Unbekannter Befehl: {action_type}")
+                return False
 
+            self.pub.publish(self.command)
+            rospy.sleep(2) 
+
+            if self.current_status is None:
+                rospy.logwarn("Kein Status vom Greifer empfangen.")
+                return False
+
+        
+
+            return True
 #======Get Hum Data======
 
 class get_Hum_mertics:
@@ -669,7 +699,7 @@ class get_Hum_mertics:
         self.lefthandkoords =     [0.0, 0.0, 0.0]
         self.inside_norm_upper = True
         self.inside_norm_fore  = True
-        self.calc_arm_lenght()
+        #self.calc_arm_lenght()
         self.stop_event = threading.Event()
 
     def camera_listener(self):
@@ -679,9 +709,9 @@ class get_Hum_mertics:
             time = rospy.Time(0)
             listener = tf.TransformListener()
 
-            listener.waitForTransform("base", "shoulder", time, rospy.Duration(1.0))
-            listener.waitForTransform("base", "elbow",    time, rospy.Duration(1.0))
-            listener.waitForTransform("base", "hand",     time, rospy.Duration(1.0))
+            listener.waitForTransform("base", "shoulder", time, rospy.Duration(4.0))
+            listener.waitForTransform("base", "elbow",    time, rospy.Duration(4.0))
+            listener.waitForTransform("base", "hand",     time, rospy.Duration(4.0))
 
             shoulder_trans, _ = listener.lookupTransform("base", "shoulder",  time)
             elbow_trans,    _ = listener.lookupTransform("base", "elbow",     time)
@@ -697,7 +727,7 @@ class get_Hum_mertics:
     def camera_listener_arms(self):
     #lese tf für Schulter Elebogen und Hand aus
         try:
-
+            self.camera_listener()
             time = rospy.Time(0)
             listener = tf.TransformListener()
 
@@ -730,7 +760,7 @@ class get_Hum_mertics:
 
     def calc_arm_lenght(self):
     #bestimme ober und unterarm länge
-        self.camera_listener()
+        #self.camera_listener()
         self.camera_listener_arms()
         self.uperarmlenght = self.calc_euclidean_distance(self.leftshoulderkoords,  self.leftelbowkoords)
         self.forearmlenght = self.calc_euclidean_distance(self.lefthandkoords,      self.leftelbowkoords)
@@ -765,12 +795,14 @@ class get_Hum_mertics:
         else:
             rospy.logwarn(f"Oberarmmaße sind außerhalb 5. bis 95 Perzentil")
             self.inside_norm_upper = False
+            self.uperarmlenght = upperarmlenghtdin
 
         if(self.forearmlenght <= forearmlenghdin_max) and (self.forearmlenght <= forearmlenghdin_min):
             self.inside_norm_fore = True
         else:
             rospy.logwarn(f"Unterarmmaße sind außerhalb 5. bis 95 Perzentil")
             self.inside_norm_fore = False
+            self.forearmlenght = forearmlenghdin
     
     def get_arm_angels(self):
 
@@ -853,8 +885,8 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
-        #if not robot_control.gripper_controller.send_gripper_command('activate'):
-        #    return 'aborted'
+        if not robot_control.gripper_controller.send_gripper_command('activate'):
+           return 'aborted'
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -875,7 +907,7 @@ class MPickUp(smach.State):
                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_m[self.counter]):
                     return 'aborted'
-                if not robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20):
+                if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747), 20):
                     return 'aborted'
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
@@ -898,26 +930,45 @@ class MHoldHD(smach.State):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
         newuser = input('enter y/n: ')
-        if newuser == "y":
-            if not robot_control.handover_to_hum(5):
-                return 'aborted'
-            self.hm.stop_event = threading.Event()
-            thread = threading.Thread(target=self.hm.get_arm_angels)
-            thread.start()
-            input("Drücke Enter, um zu stoppen...\n")
-            self.hm.stop_event.set()
-            thread.join()
-
-            if not robot_control.move_to_joint_goal( (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867), 20):
+        while True:
+            if newuser == "y":
+                if not robot_control.handover_to_hum(5):
                     return 'aborted'
-            return 'succeeded'
-        elif newuser == "n":
-            rospy.loginfo('weiter')
-            return 'succeeded'
-        elif newuser == "a":
-            rospy.loginfo('abort')
-            return 'aborted'
+                self.hm.stop_event = threading.Event()
+                thread = threading.Thread(target=self.hm.get_arm_angels)
+                thread.start()
+                input("Drücke Enter, um zu stoppen...\n")
+                self.hm.stop_event.set()
+                thread.join(timeout=2.0)
 
+                if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747), 20):
+                        return 'aborted'
+                return 'succeeded'
+            elif newuser == "n":
+                rospy.loginfo('weiter')
+                return 'succeeded'
+            elif newuser == "a":
+                rospy.loginfo('abort')
+                return 'aborted'
+            elif newuser == "t":
+                rospy.loginfo('test_modus')
+                while True:
+                   
+                        if not robot_control.handover_to_hum(5):
+                            return 'aborted'
+                        self.hm.stop_event = threading.Event()
+                        thread = threading.Thread(target=self.hm.get_arm_angels)
+                        thread.start()
+                        input("Drücke Enter, um zu stoppen...\n")
+                        self.hm.stop_event.set()
+                        thread.join()
+
+                        if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747 ), 20):
+                                return 'aborted'
+                        continue
+
+                continue
+            
 class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB','aborted'])
@@ -930,7 +981,7 @@ class MPositioning(smach.State):
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_1),10):
+                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_2),10):
                     return 'aborted'
                 if not robot_control.gripper_controller.send_gripper_command('open'):
                     return'aborted'
@@ -953,7 +1004,7 @@ class PCB1PickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-3.1299, -2.1996, -0.6071, -1.8830, 1.5654, -3.1786),10):
+                if not robot_control.move_to_joint_goal((-3.1685, -2.1329, -1.1121, -1.4531, 1.5636, -3.1929),10):
                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb1[self.counter]):
                     return 'aborted'
@@ -1020,7 +1071,7 @@ class BatteryPickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-2.8680, -1.9416, -1.1650, -1.6055, 1.5637, -1.3022),10):
+                if not robot_control.move_to_joint_goal((-2.8658, -1.9520, -1.1734, -1.6044, 1.5588, -4.4440),10):
                     return 'aborted' 
                 if not robot_control.pick_up(rb_arm_on_battery[self.counter]):
                     return 'aborted' 
@@ -1037,7 +1088,7 @@ class BatteryPickUpAndPositioning(smach.State):
                 # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
                 # if not robot_control.move_to_target_carth_plan(plan,10):
                 #     return 'aborted' 
-                # return 'succeeded'
+                return 'succeeded'
             
             elif newuser == "n":
                 print("Exiting")
@@ -1045,13 +1096,13 @@ class BatteryPickUpAndPositioning(smach.State):
 
 class Aborted(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded_end','succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded_end','succeeded','start'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
         while True:
             newuser = input('neuer Versuch? y/n: ')
             if newuser == "y":
-                return 'succeeded'
+                return 'start'
             elif newuser == "n":
                 return 'succeeded_end'
 
@@ -1077,12 +1128,15 @@ class Test(smach.State):
                 {
                     "type": "cartesian",
                     "pose": robot_control.convert_to_pose(rb_arm_transition_over_m)
-                },{
+                },
+                *robot_control.pick_up_plan(rb_arm_on_m[0]),
+                {
                     "type": "joint",
                     "joints": (-3.8423, -1.0118, -2.3565, -2.8601, -0.7018, -3.1867)
                 }
                 ]
-            command_list[4:4] = robot_control.pick_up_plan(rb_arm_on_m[0])
+            command_list[3:3] = robot_control.pick_up_plan(rb_arm_on_m[0])
+            rospy.loginfo(command_list)
             robot_control.planner(command_list)
             return 'succeeded_end'
 
@@ -1160,7 +1214,8 @@ if __name__ == "__main__":
                                             'aborted':'Aborted'})
         smach.StateMachine.add('Aborted', Aborted(),
                                transitions={'succeeded_end':'finished',
-                                            'succeeded':'MPickUp'})
+                                            'succeeded':'MPickUp',
+                                            'start':'Start'})
 
     # Iniizialisiere den introspection server
     try:

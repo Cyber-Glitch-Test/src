@@ -53,7 +53,7 @@ align = rs.align(align_to)
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
 
-# Camera Intrinsics
+# Kamera Intrinsics
 intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
 fx, fy = intrinsics.fx, intrinsics.fy  # Focal lengths
 cx, cy = intrinsics.ppx, intrinsics.ppy  # Principal point
@@ -369,6 +369,48 @@ while not rospy.is_shutdown():
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"Error transforming point: {e}")
+    
+    #Box projeziern in der die übergabe statfindet
+
+    x1, y1, z1 = np.array([ 0.20,  0.0, 0.6])
+    x2, y2, z2 = np.array([-0.24, -0.7, 0.04])
+
+    box_points_3d = [
+        [x1, y1, z1],
+        [x1, y1, z2],
+        [x1, y2, z1],
+        [x1, y2, z2],
+        [x2, y1, z1],
+        [x2, y1, z2],
+        [x2, y2, z1],
+        [x2, y2, z2]
+    ]
+
+
+    box_points_2d = []
+    for point in box_points_3d:
+        x, y, z = point
+        if z == 0: z = 0.0001 
+        u = int((x * fx) / z + cx)
+        v = int((y * fy) / z + cy)
+        box_points_2d.append((u, v))
+
+
+    edges = [
+        (0, 1), (0, 2), (0, 4),
+        (1, 3), (1, 5),
+        (2, 3), (2, 6),
+        (3, 7),
+        (4, 5), (4, 6),
+        (5, 7),
+        (6, 7)
+    ]
+
+
+    for start, end in edges:
+        pt1 = box_points_2d[start]
+        pt2 = box_points_2d[end]
+        cv2.line(color_image, pt1, pt2, (0, 0, 255), 2)
 
     cv2.imshow("Pose Landmarks", cv2.flip(color_image,-1))
     cv2.waitKey(1)

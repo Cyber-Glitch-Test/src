@@ -108,18 +108,23 @@ user = ""
 
 use_built_in_rb_control = False
 
+cmd_nr = 0
+cmd_list = []
+
 #======Robot Control Class======
 
 class RobotControl:
     
     def __init__(self, group_name):
 
+        self.gripper_controller = GripperController()
+
         if not use_built_in_rb_control:       
 
             #Initialisiert die MoveIt-Gruppe und die Greifer-Node
             self.group_name = group_name
             self.move_group = MoveGroupCommander(self.group_name)
-            self.gripper_controller = GripperController()
+            
             self.scene = PlanningSceneInterface()
             self.robot = moveit_commander.RobotCommander()
 
@@ -182,6 +187,13 @@ class RobotControl:
             self.move_group.set_max_velocity_scaling_factor(0.1)
             self.move_group.set_max_acceleration_scaling_factor(0.1)
 
+        if use_built_in_rb_control:  
+
+            self.command_pub = rospy.Publisher('/robot/command', robot_msgs, queue_size=10)
+            self.status_sub = rospy.Subscriber('/robot/status', String, self.status_callback)
+            self.status_event = threading.Event()
+            self.completed_cmds = 0
+            self.expected_cmds = 0
 
         while True:
             user = input('Gebe initialen ein: ')
@@ -202,7 +214,7 @@ class RobotControl:
         target_pose.orientation.w = koords[6]
         return target_pose
     
-    def convert_to_koords(self, pose= Pose()):
+    def convert_to_koords(self, pose = Pose()):
         #Konvertiert eine Pose in ein 1x7-Array
         koords = [0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         koords[0] = pose.position.x
@@ -217,7 +229,8 @@ class RobotControl:
     def move_to_target(self, target_pose, speed):
         if not use_built_in_rb_control:
             command = [{'type':'p2p','pose':target_pose}] 
-            self.publish_rb_cmds(command)
+            if not self.publish_rb_cmds(command):
+                return False
             return True
         
         #Bewegt den Roboter zu einer Zielpose
@@ -239,7 +252,8 @@ class RobotControl:
         #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
         if not use_built_in_rb_control:
             command = [{'type':'cartesian','pose':target_pose}]
-            self.publish_rb_cmds(command)
+            if not self.publish_rb_cmds(command):
+                return False
             return True
 
 
@@ -265,7 +279,8 @@ class RobotControl:
         if not use_built_in_rb_control:
             for pose in waypoints:
                 command = [{'type':'cartesian','pose':pose}]
-                self.publish_rb_cmds(command)
+                if not self.publish_rb_cmds(command):
+                    return False
                 return True
 
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
@@ -289,7 +304,8 @@ class RobotControl:
         if not use_built_in_rb_control:
             for pose in waypoints:
                 command = [{'type':'p2p','pose':pose}]
-                self.publish_rb_cmds(command)
+                if not self.publish_rb_cmds(command):
+                    return False
                 return True
             
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
@@ -311,7 +327,8 @@ class RobotControl:
             command = [{'type':'joint','joints':joint_goal}]
             rospy.loginfo(type(command))
             rospy.loginfo(command)
-            self.publish_rb_cmds(command)
+            if not self.publish_rb_cmds(command):
+                return False
             return True
 
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
@@ -330,11 +347,11 @@ class RobotControl:
         self.move_group.stop()
         rospy.loginfo("Roboter gestoppt!")
 
-    def reset_robot(self):
-        #Setzt den Roboter auf die Home-Position zurück
-        self.move_group.set_named_target("home")
-        self.move_group.go(wait=True)
-        rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
+    # def reset_robot(self):
+    #     #Setzt den Roboter auf die Home-Position zurück
+    #     self.move_group.set_named_target("home")
+    #     self.move_group.go(wait=True)
+    #     rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
     def handover_to_hum(self,speed):
 
@@ -351,7 +368,10 @@ class RobotControl:
         if not use_built_in_rb_control:
             command =   [{'type':'cartesian','pose':handover_pose_start},
                          {'type':'cartesian','pose':handover_pose_end}]
-            self.publish_rb_cmds(command)
+            
+            if not self.publish_rb_cmds(command):
+                return False
+            
             return True
         
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(handover_pose_start.position.x, handover_pose_start.position.y, handover_pose_start.position.z))
@@ -469,12 +489,14 @@ class RobotControl:
             over_target_pose = self.convert_to_pose(over_target)
             target_pose = self.convert_to_pose(target)
 
-            command =   [{'type':'p2p','pose':over_target_pose},
+            command1 =   [{'type':'p2p','pose':over_target_pose},
                          {'type':'cartesian','pose':target_pose},
-
+                         {'type':'gripper','action':'close'},
                          {'type':'cartesian','pose':over_target_pose}]
             
-            self.publish_rb_cmds(command)
+            if not self.publish_rb_cmds(command1):
+                return False
+
             return True
 
         if not self.move_to_target(self.convert_to_pose(over_target), 5):
@@ -526,7 +548,7 @@ class RobotControl:
                             return False
                         waypoints = []  # zurücksetzen!
 
-                    if ctype == "joint":
+                    if command['type'] == "joint":
                         self.move_group.set_joint_value_target(command["joints"])
                         plan = self.move_group.plan()
                         if not plan or not plan.joint_trajectory.points:
@@ -534,7 +556,7 @@ class RobotControl:
                             return False
                         self.move_group.execute(plan, wait=True)
 
-                    elif ctype == "p2p":
+                    elif command['type'] == "p2p":
                         self.move_group.set_pose_target(command["pose"])
                         plan = self.move_group.plan()
                         if not plan or not plan.joint_trajectory.points:
@@ -542,7 +564,7 @@ class RobotControl:
                             return False
                         self.move_group.execute(plan, wait=True)
 
-                    elif ctype == "gripper":
+                    elif command['type'] == "gripper":
                         if not self.gripper_controller.send_gripper_command(command["action"]):
                             return False
 
@@ -558,42 +580,66 @@ class RobotControl:
                 return False
             if not self.move_group.execute(plan, wait=True):
                 return False
+        return True
+
+    def status_callback(self, msg):
+        if msg.data == "done":
+            self.completed_cmds += 1
+            rospy.loginfo(f"Bewegung bestätigt: {self.completed_cmds}/{self.expected_cmds}")
+            if self.completed_cmds >= self.expected_cmds:
+                self.status_event.set()
+
+    def wait_for_all_done(self, timeout=15.0):
+        success = self.status_event.wait(timeout)
+        self.status_event.clear()
+        return success
+
+    def publish_rb_cmds(self, commands):
+        self.completed_cmds = 0
+        self.expected_cmds = 0
+        cmd_nr = 0
+
+        for cmd in commands:
+            if cmd["type"] == "gripper":
+                # Alle bisherigen Bewegungen wurden gesendet, jetzt auf Abschluss warten
+                rospy.loginfo("Warte auf Abschluss aller bisherigen Bewegungen...")
+                if not self.wait_for_all_done():
+                    rospy.logwarn("Timeout beim Warten auf Bewegungsabschluss vor Greiferkommando.")
+                    return False
+
+                # Jetzt Greiferbefehl ausführen
+                rospy.loginfo("Führe Greiferbefehl aus.")
+                self.gripper_controller.send_gripper_command(cmd["action"])
+                rospy.sleep(1)  # Optional kleine Pause nach Greifer
+                continue
+
+            # Bewegungscmd vorbereiten
+            msg = robot_msgs()
+            msg.nr = cmd_nr
+            msg.type = cmd["type"]
+
+            if cmd["type"] == "joint":
+                msg.joints = list(cmd["joints"])
+            elif cmd["type"] in ["cartesian", "p2p"]:
+                msg.pose = cmd["pose"]
+
+            # Sende den Befehl
+            self.command_pub.publish(msg)
+            rospy.loginfo(f"Gesendet: {cmd['type']} #{cmd_nr}")
+            cmd_nr += 1
+            self.expected_cmds += 1
+            rospy.sleep(0.05)  
+
+        # Nach der letzten Bewegung warten (optional, je nach Bedarf)
+        if self.expected_cmds > 0:
+            rospy.loginfo("Warte auf Abschluss aller Bewegungen.")
+            if not self.wait_for_all_done():
+                rospy.logwarn("Timeout beim finalen Warten.")
+                return False
 
         return True
 
-
-    def publish_rb_cmds(self,commands):
-        cmd_nr = 0
-        for cmd in commands:
-            msg = robot_msgs()
-            command_pub = rospy.Publisher('/robot/command', robot_msgs, queue_size=10)
-
-            rospy.loginfo(type(cmd))
-            msg.nr = cmd_nr
-            msg.type = cmd["type"]
-            if cmd["type"] == "joint":
-                msg.joints = list(cmd["joints"])
-
-            elif cmd["type"] == "cartesian":
-                msg.pose = cmd["pose"]
-            
-            elif cmd["type"] == "p2p":
-                msg.pose = cmd["pose"]
-
-            rospy.loginfo(f"Published command: {msg}")
-
-            command_pub.publish(msg)
-            cmd_nr += 1
-            rospy.sleep(1) 
-            cmd_nr +=1
-
-    # def listener_rb_cmds(self):
-    #     rospy.Subscriber('/robot/command', RobotCommand, command_callback)
-
-    #def command_callback(self,msg):
-        #do something
-
-    def place_on_board(self,target,speed):
+    def place_on_board(self,target,speed,gripper_val = 'open'):
         next_board = copy(target)
         over_board = copy(target)
         next_board[1] = next_board[1] - 0.2
@@ -601,19 +647,15 @@ class RobotControl:
         over_board[2] = over_board[2] + 0.04
         
         if not use_built_in_rb_control:
-            command1 =   [{'type':'cartesian','pose':next_board},
+            command =   [{'type':'cartesian','pose':next_board},
                          {'type':'cartesian','pose':over_board},
-                         {'type':'cartesian','pose':target}]
-            
-            self.publish_rb_cmds(command1)
-
-            if not self.gripper_controller.send_gripper_command('open'):
-                return False
-            
-            command2 =   [{'type':'cartesian','pose':over_board},
+                         {'type':'cartesian','pose':target},
+                         {'type':'gripper','action':gripper_val},
+                         {'type':'cartesian','pose':over_board},
                          {'type':'cartesian','pose':next_board}]
 
-            self.publish_rb_cmds(command2)
+            if not self.publish_rb_cmds(command):
+                return False
             return True
 
         plan1 = []
@@ -627,63 +669,51 @@ class RobotControl:
 
         if not self.move_to_target_carth_plan(plan1,speed):
             return False
-        if not self.gripper_controller.send_gripper_command('open'):
+        if not self.gripper_controller.send_gripper_command(gripper_val):
             return False
         if not self.move_to_target_carth_plan(plan2,speed):
             return False
-
-
-
+        
+        return True
 
 #======Gripper Control======
-
 class GripperController:
     def __init__(self):
-        #Initialisiert den Gripper-Controller
-        self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        self.command = outputMsg.Robotiq2FGripper_robot_output()
+        # Initialisiert Publisher und Subscriber
+        self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg, queue_size=10)
+        self.status = None
+        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg, self.status_callback)
 
-    def statusInterpreter(status):
-        """Generate a string according to the current value of the status variables."""
-        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg.Robotiq2FGripper_robot_input, status)
-        output = ''
-        #gSTA
-        if(status.gSTA == 0):
-            output = 'Gripper is in reset ( or automatic release ) state. see Fault Status if Gripper is activated\n'
-        if(status.gSTA == 1):
-            output = 'Activation in progress\n'
-        if(status.gSTA == 2):
-            output = 'Not used\n'
-        if(status.gSTA == 3):
-            output = 'activate'
+    def status_callback(self, msg):
+        self.status = msg
 
-        #gOBJ
-        if(status.gOBJ == 0):
-            output = 'Fingers are in motion (only meaningful if gGTO = 1)\n'
-        if(status.gOBJ == 1):
-            output = 'Fingers have stopped due to a contact while opening\n'
-        if(status.gOBJ == 2):
-            output = 'close'
-        if(status.gOBJ == 3):
-            output = 'open'
-    
-        if(status.gFLT == 0x05):
-            output = 'Priority Fault: Action delayed, initialization must be completed prior to action\n'
-        if(status.gFLT == 0x07):
-            output = 'Priority Fault: The activation bit must be set prior to action\n'
-        if(status.gFLT == 0x09):
-            output = 'Minor Fault: The communication chip is not ready (may be booting)\n'   
-        if(status.gFLT == 0x0B):
-            output = 'Minor Fault: Automatic release in progress\n'
-        if(status.gFLT == 0x0E):
-            output = 'Major Fault: Overcurrent protection triggered\n'
-        if(status.gFLT == 0x0F):
-            output = 'Major Fault: Automatic release completed\n'
-        rospy.loginfo(output)
-        return output
+    def wait_for_gripper_stop(self, timeout=5.0):
+        """Warte, bis der Gripper zum Stillstand gekommen ist oder Fehler erkannt wird."""
+        start_time = rospy.Time.now()
+        rate = rospy.Rate(10)  # 10 Hz
+
+        while not rospy.is_shutdown():
+            if self.status is None:
+                rospy.logwarn("Kein Status empfangen...")
+            else:
+                if self.status.gFLT == 0x09:
+                    rospy.logerr("Kommunikationsfehler: Chip nicht bereit.")
+                    return False
+                elif self.status.gOBJ in [1, 2, 3]:  # Bewegung abgeschlossen
+                    return True
+
+            if (rospy.Time.now() - start_time).to_sec() > timeout:
+                rospy.logwarn("Timeout beim Warten auf Gripper-Stillstand.")
+                return False
+
+            rate.sleep()
+
+        return False  # Falls node abgeschaltet wird
 
     def send_gripper_command(self, action_type):
-        #Sendet Befehle an den Greifer
+        """Sendet Befehl und wartet auf Abschluss."""
+        self.command = outputMsg()
+
         if action_type == 'open':
             self.command.rPR = 0
         elif action_type == 'close':
@@ -693,14 +723,17 @@ class GripperController:
             self.command.rGTO = 1
             self.command.rSP = 255
             self.command.rFR = 150
-        elif action_type == 'deactivate':
+        elif action_type == 'reset':
             self.command.rACT = 0
+        elif isinstance(action_type, int):
+            self.command.rPR = max(0, min(255, int(action_type)))
+
         self.pub.publish(self.command)
-        rospy.sleep(2)
-        return action_type == self.statusInterpreter
+
+        rospy.loginfo(f"Gripper-Befehl '{action_type}' gesendet – warte auf Abschluss...")
+        return self.wait_for_gripper_stop()
 
 #======Get Hum Data======
-
 class get_Hum_mertics:
     #innitiere tracking des Menschen
     def __init__(self):
@@ -833,8 +866,16 @@ class get_Hum_mertics:
             left_elbow = np.array([self.leftelbowkoords[0],self.leftelbowkoords[1],self.leftelbowkoords[2]])
             left_hand = np.array([self.lefthandkoords[0],self.lefthandkoords[1],self.lefthandkoords[2]])
 
-            right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
-            left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
+            if not(all(x == 0 for x in right_shoulder)) and not(all(x == 0 for x in right_elbow)) and not(all(x == 0 for x in right_hand)):
+                right_angle = None
+            else:
+                right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
+
+            if not(all(x == 0 for x in left_shoulder)) and not(all(x == 0 for x in left_elbow)) and not(all(x == 0 for x in left_hand)):
+                left_angle = None
+            else:
+                left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
+
 
             print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
             with open('armlaengen.csv','a', newline='') as f:
@@ -845,53 +886,90 @@ class get_Hum_mertics:
 
 robot_control = RobotControl("manipulator")
     
-
 ################################ Initialisiere Smachstates ################################
-
 class Start(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end','test'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
-        print("\n--- Hauptmenü ---")
-        print("1. MPickUp")
-        print("2. MHoldHD")
-        print("3. MPositioning")
-        print("4. PCB1PickUpAndPositioning")
-        print("5. PCB2PickUpAndPositioning")
-        print("6. BatteryPickUpAndPositioning")
-        print("7. Beenden")
-        print("8. Test")
+        if( user ==  "test" ):
 
-        start = input("Bitte wähle eine State aus: ")
-        while True:
-            if start == "1" or start == "":
-                print("\nDu hast MPickUp gewählt gewählt.")
-                return 'MPickUp'
-            elif start == "2":
-                print("\nDu hast MHoldHD gewählt.")
-                return 'MHoldHD'
-            elif start == "3":
-                print("\nDu hast MPositioning gewählt.")
-                return 'MPositioning'
-            elif start == "4":
-                print("\nDu hast PCB1PickUpAndPositioning gewählt.")
-                return 'PCB1PickUpAndPositioning'
-            elif start == "5":
-                print("\nDu hast PCB2PickUpAndPositioning gewählt.")
-                return 'PCB2PickUpAndPositioning'
-            elif start == "6":
-                print("\nDu hast BatteryPickUpAndPositioning gewählt.")
-                return 'BatteryPickUpAndPositioning'
-            elif start == "7":
-                print("\nDu hast Abort gewählt.")
-                return 'succeeded_end'
-            elif start == "8":
-                print("\nDu hast Test gewählt.")
-                return 'test'
-            else:
-                print("\n {start} gibts nicht. try again.")
+            print("\n--- Hauptmenü ---")
+            print("1. MPickUp")
+            print("2. MHoldHD")
+            print("3. MPositioning")
+            print("4. PCB1PickUpAndPositioning")
+            print("5. PCB2PickUpAndPositioning")
+            print("6. BatteryPickUpAndPositioning")
+            print("7. Beenden")
+            print("8. Test")
+
+            while True:
+                    start = input("Bitte wähle einen State aus (1–8): ")
+                    if start == "1" or start == "":
+                        print("\nDu hast MPickUp gewählt.")
+                        return 'MPickUp'
+                    elif start == "2":
+                        print("\nDu hast MHoldHD gewählt.")
+                        return 'MHoldHD'
+                    elif start == "3":
+                        print("\nDu hast MPositioning gewählt.")
+                        return 'MPositioning'
+                    elif start == "4":
+                        print("\nDu hast PCB1PickUpAndPositioning gewählt.")
+                        return 'PCB1PickUpAndPositioning'
+                    elif start == "5":
+                        print("\nDu hast PCB2PickUpAndPositioning gewählt.")
+                        return 'PCB2PickUpAndPositioning'
+                    elif start == "6":
+                        print("\nDu hast BatteryPickUpAndPositioning gewählt.")
+                        return 'BatteryPickUpAndPositioning'
+                    elif start == "7":
+                        print("\nDu hast Abort gewählt.")
+                        return 'succeeded_end'
+                    elif start == "8":
+                        print("\nDu hast Test gewählt.")
+                        return 'test'
+                    else:
+                        print(f"\n'{start}' gibts nich du Depp!")
+        else:
+
+            print("\n--- Hauptmenü ---")
+            print("1. MPickUp")
+            print("2. MHoldHD")
+            print("3. MPositioning")
+            print("4. PCB1PickUpAndPositioning")
+            print("5. PCB2PickUpAndPositioning")
+            print("6. BatteryPickUpAndPositioning")
+            print("7. Beenden")
+
+            while True:
+                    start = input("Bitte wähle einen State aus (1–8): ")
+                    
+                    if start == "1" or start == "":
+                        print("\nDu hast MPickUp gewählt.")
+                        return 'MPickUp'
+                    elif start == "2":
+                        print("\nDu hast MHoldHD gewählt.")
+                        return 'MHoldHD'
+                    elif start == "3":
+                        print("\nDu hast MPositioning gewählt.")
+                        return 'MPositioning'
+                    elif start == "4":
+                        print("\nDu hast PCB1PickUpAndPositioning gewählt.")
+                        return 'PCB1PickUpAndPositioning'
+                    elif start == "5":
+                        print("\nDu hast PCB2PickUpAndPositioning gewählt.")
+                        return 'PCB2PickUpAndPositioning'
+                    elif start == "6":
+                        print("\nDu hast BatteryPickUpAndPositioning gewählt.")
+                        return 'BatteryPickUpAndPositioning'
+                    elif start == "7":
+                        print("\nDu hast Abort gewählt.")
+                        return 'succeeded_end'
+                    else:
+                        print(f"\n'{start}' gibt es nicht. Try again")
 
 class MPickUp(smach.State):
     def __init__(self):
@@ -1124,7 +1202,16 @@ class Test(smach.State):
 
             elif newuser == "n":
                 return 'aborted'
-
+            elif newuser == "t":
+                wahl = input("Welches Objekt soll der Roboter aufheben? ")
+                # Zugriff über globals()
+                if wahl in globals():
+                    ausgewähltes_objekt = globals()[wahl]
+                    wahl2 = input("Welche nr?")
+                    robot_control.pick_up(ausgewähltes_objekt[wahl2])
+                else:
+                    print("Ungültige Eingabe oder Variable nicht definiert.")
+                
 
 if __name__ == "__main__":
 

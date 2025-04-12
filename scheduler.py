@@ -28,7 +28,7 @@ from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inp
 #test
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [0.4746989713583776, 0.5086510395580778, -0.5204142313976312, 0.49507982619633983]
+tcp_to_hum = [0.4885036803216398, 0.4954440365879754, -0.506671308776122, 0.5091007226322881]
 
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
@@ -60,6 +60,8 @@ rb_arm_transition_over_pcb2 =   np.array([0.39299783753064255, -0.25037007326362
 rb_arm_transition_over_gb0_1 =  np.array([0.43920883565114404, -0.27118297223348553, 0.21533919567733978,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 rb_arm_transition_over_gb0_2 =  np.array([0.4017174799606998, -0.2181725740604259, 0.2921709170604791, -0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 
+rb_arm_place_m_on_gb =          np.array([0.39854600328887463, -0.27554380366129894, 0.2096079683752514, 0.013454136070054674, -0.6962561587863013, 0.7174988234549298, 0.01554946672864364])
+
 rb_arm_transition_over_gb1_1 =  np.array([0.4907380230958256, -0.33196635637380156, 0.3911058561909323,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
 rb_arm_transition_over_gb1_2 =  np.array([0.4907380230958256, -0.45983847995419647, 0.3910704893338057  ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
 rb_arm_transition_over_gb1_3 =  np.array([0.4907380230958256, -0.45983847995419647, 0.35395950043452323 ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
@@ -70,8 +72,7 @@ rb_arm_transition_over_gb2_3 =  np.array([0.5486854170473805, -0.270573936094476
 
 rb_arm_transition_over_gb3_1 =  np.array([0.6402808547359244, -0.26790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
 rb_arm_transition_over_gb3_2 =  np.array([0.6402808547359244, -0.46790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
-rb_arm_transition_over_gb3_3 =  np.array([0.6402808547359244, -0.46790083190492066, 0.35478830422197494 ,0.010290457772605947, 0.9997533010888775, -0.005696452057469483, 0.018841281131592193
-])
+rb_arm_transition_over_gb3_3 =  np.array([0.6402808547359244, -0.46790083190492066, 0.35478830422197494 ,0.010290457772605947, 0.9997533010888775, -0.005696452057469483, 0.018841281131592193])
 
 rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
                     np.array([0.6866488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
@@ -272,7 +273,8 @@ class RobotControl:
 
         self.move_group.set_planning_time(10.0) 
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.05) 
-        
+        if fraction < 1.0:
+            return False
         success = self.move_group.execute(plan, wait=True)
         if success:
             rospy.loginfo("Bewegung erfolgreich!")
@@ -512,14 +514,23 @@ class RobotControl:
     def planner(self, command_list, speed):
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
+
+        def extract_plan(plan_result):
+            # Extrahiert das eigentliche Plan-Objekt aus einem Tuple
+            if isinstance(plan_result, tuple):
+                for item in plan_result:
+                    if hasattr(item, "joint_trajectory"):
+                        return item
+                return None  # kein gültiger Plan gefunden
+            return plan_result
+
         for command in command_list:
             try:
-                #kathesische bewegungen
                 if command['type'] == 'cartesian':
                     waypoints.append(command['pose'])
 
                 else:
-                    # Wenn kartesische Waypoints da sind, führe sie zuerst aus
+                    # Wenn kartesische Waypoints vorhanden sind, führe sie zuerst aus
                     if waypoints:
                         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
                         if fraction < 1.0:
@@ -527,25 +538,27 @@ class RobotControl:
                             return False
                         if not self.move_group.execute(plan, wait=True):
                             return False
-                        waypoints = []  # zurücksetzen!
+                        waypoints = []  # Zurücksetzen!
 
-                    if ctype == "joint":
+                    if command['type'] == "joint":
                         self.move_group.set_joint_value_target(command["joints"])
-                        plan = self.move_group.plan()
+                        plan_result = self.move_group.plan()
+                        plan = extract_plan(plan_result)
                         if not plan or not plan.joint_trajectory.points:
                             rospy.logwarn("Gelenkbewegung konnte nicht geplant werden.")
                             return False
                         self.move_group.execute(plan, wait=True)
 
-                    elif ctype == "p2p":
+                    elif command['type'] == "p2p":
                         self.move_group.set_pose_target(command["pose"])
-                        plan = self.move_group.plan()
+                        plan_result = self.move_group.plan()
+                        plan = extract_plan(plan_result)
                         if not plan or not plan.joint_trajectory.points:
                             rospy.logwarn("P2P Bewegung konnte nicht geplant werden.")
                             return False
                         self.move_group.execute(plan, wait=True)
 
-                    elif ctype == "gripper":
+                    elif command['type'] == "gripper":
                         if not self.gripper_controller.send_gripper_command(command["action"]):
                             return False
 
@@ -553,16 +566,17 @@ class RobotControl:
                 rospy.logerr(f"Fehler beim Verarbeiten des Befehls: {e}")
                 return False
 
-        # Am Ende evtl. noch übrig gebliebene kartesische Bewegungen ausführen
+        # Noch vorhandene Waypoints am Ende ausführen
         if waypoints:
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
             if fraction < 1.0:
-                rospy.logwarn("Letzte kartesische Bewegung konnte nicht vollständig geplant werden.")
+                rospy.logwarn("Kartesische Bewegung konnte nicht vollständig geplant werden.")
                 return False
             if not self.move_group.execute(plan, wait=True):
                 return False
 
         return True
+
 
 
     def publish_rb_cmds(self,commands):
@@ -596,10 +610,12 @@ class RobotControl:
     #def command_callback(self,msg):
         #do something
 
-    def place_on_board(self,target,speed):
-        next_board = copy(target)
-        over_board = copy(target)
-        next_board[1] = next_board[1] - 0.2
+    def place_on_board(self,target,speed,distance=0.2):
+        print( target)
+        speed = 10
+        next_board = target.copy()
+        over_board = target.copy()
+        next_board[1] = next_board[1] + distance
         next_board[2] = next_board[2] + 0.04
         over_board[2] = over_board[2] + 0.04
         
@@ -619,15 +635,18 @@ class RobotControl:
             self.publish_rb_cmds(command2)
             return True
 
+        #0.4907380230958256, -0.45983847995419647, 0.35395950043452323 
+
         plan1 = []
         plan1.append(self.convert_to_pose(next_board))
         plan1.append(self.convert_to_pose(over_board))
         plan1.append(self.convert_to_pose(target))
-
+        rospy.loginfo(plan1)
         plan2 = []
         plan2.append(self.convert_to_pose(over_board))
         plan2.append(self.convert_to_pose(next_board))
 
+        rospy.loginfo(plan2)
         if not self.move_to_target_carth_plan(plan1,speed):
             return False
         if not self.gripper_controller.send_gripper_command('open'):
@@ -721,7 +740,7 @@ class GripperController:
 
             if self.current_status is None:
                 rospy.logwarn("Kein Status vom Greifer empfangen.")
-                return False
+                #return False
 
         
 
@@ -946,10 +965,10 @@ class MPickUp(smach.State):
                     return 'aborted'
                 if not robot_control.gripper_controller.send_gripper_command('open'):
                     return 'aborted'
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
-                if not robot_control.move_to_taget_plan(plan,10):
-                    return 'aborted'
+                # plan = []
+                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
+                # if not robot_control.move_to_taget_plan(plan,10):
+                #     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_m[self.counter]):
                     return 'aborted'
                 if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747), 20):
@@ -1001,15 +1020,7 @@ class MHoldHD(smach.State):
                    
                         if not robot_control.handover_to_hum(5):
                             return 'aborted'
-                        self.hm.stop_event = threading.Event()
-                        thread = threading.Thread(target=self.hm.get_arm_angels)
-                        thread.start()
-                        input("Drücke Enter, um zu stoppen...\n")
-                        self.hm.stop_event.set()
-                        thread.join()
 
-                        if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747 ), 20):
-                                return 'aborted'
                         continue
 
                 continue
@@ -1026,11 +1037,7 @@ class MPositioning(smach.State):
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_2),10):
-                    return 'aborted'
-                if not robot_control.gripper_controller.send_gripper_command('open'):
-                    return'aborted'
-                if not robot_control.move_to_target_carth(robot_control.convert_to_pose(rb_arm_transition_over_gb0_2),10):
+                if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.05):
                     return 'aborted'
                 return 'succeeded_to_PCB'
             elif newuser == "n":
@@ -1049,8 +1056,8 @@ class PCB1PickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-3.1685, -2.1329, -1.1121, -1.4531, 1.5636, -3.1929),10):
-                    return 'aborted'
+                # if not robot_control.move_to_joint_goal((-3.1685, -2.1329, -1.1121, -1.4531, 1.5636, -3.1929),10):
+                #     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb1[self.counter]):
                     return 'aborted'
                 if not robot_control.place_on_board(rb_arm_transition_over_gb1_3,10):
@@ -1070,26 +1077,14 @@ class PCB2PickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-3.4437, -1.5349, -1.6576, -1.5354, 1.5145, -3.469),10):
-                    return 'aborted'
+                # if not robot_control.move_to_joint_goal((-3.4437, -1.5349, -1.6576, -1.5354, 1.5145, -3.469),10):
+                #     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb2[self.counter]):
                     return 'aborted'
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_1))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_2))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_3))
-                if not robot_control.move_to_target_carth_plan(plan,10):
-                    return 'aborted' 
-                if not robot_control.gripper_controller.send_gripper_command('open'):
-                    return 'aborted'
-                
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_2))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb3_1))
 
-                if not robot_control.move_to_target_carth_plan(plan,10):
+                if not robot_control.place_on_board(rb_arm_transition_over_gb3_3,10):
                     return 'aborted'
-                
+            
                 self.counter +=1
                 return 'succeeded'
             elif newuser == "n":
@@ -1105,23 +1100,13 @@ class BatteryPickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.move_to_joint_goal((-2.8658, -1.9520, -1.1734, -1.6044, 1.5588, -4.4440),10):
-                    return 'aborted' 
+                # if not robot_control.move_to_joint_goal((-2.8658, -1.9520, -1.1734, -1.6044, 1.5588, -4.4440),10):
+                #     return 'aborted' 
                 if not robot_control.pick_up(rb_arm_on_battery[self.counter]):
                     return 'aborted' 
-                plan = []
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
-                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_2))
-                #plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_3))
-                if not robot_control.move_to_target_carth_plan(plan,10):
-                    return 'aborted' 
-                if not robot_control.gripper_controller.send_gripper_command('open'):
+                if not robot_control.place_on_board(rb_arm_transition_over_gb2_2 , 10):
                     return 'aborted'
-                # plan = []
-                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_2))
-                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_gb2_1))
-                # if not robot_control.move_to_target_carth_plan(plan,10):
-                #     return 'aborted' 
+
                 return 'succeeded'
             
             elif newuser == "n":
@@ -1148,6 +1133,8 @@ class Test(smach.State):
         while True:
             newuser = input('neuer Versuch? y/n: ')
             if newuser == "y":
+
+
                 command_list = [
                     {
                         "type": "joint",

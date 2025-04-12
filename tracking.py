@@ -17,7 +17,7 @@ from std_srvs.srv import Empty  # type: ignore
 rospy.init_node('Stereo_Cam')
 
 broadcaster = tf.TransformBroadcaster()
-translation = (-0.30, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
+translation = (0.0894, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
 rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
@@ -137,35 +137,48 @@ while not rospy.is_shutdown():
         y_right_hand = max(0, min(y_right_hand, color_image.shape[0] - 1))
 
         #Brechne die Poisition von  Schulter, Elbogen und Hand mittels Intrinsics der Kamera
-        left_shoulder_distance = depth_image[y_left_shoulder , x_left_shoulder ] * depth_scale
-        z_left_shoulder  = left_shoulder_distance
-        x_world_left_shoulder  = (x_left_shoulder  - cx) * z_left_shoulder  / fx
-        y_world_left_shoulder  = (y_left_shoulder  - cy) * z_left_shoulder  / fy
+        # Linke Schulter
+        left_shoulder_distance = depth_image[y_left_shoulder, x_left_shoulder] * depth_scale
+        z_left_shoulder = left_shoulder_distance
+        x_world_left_shoulder = (x_left_shoulder - cx) * z_left_shoulder / fx
+        x_world_left_shoulder = 0.78  * x_world_left_shoulder
+        y_world_left_shoulder = (y_left_shoulder - cy) * z_left_shoulder / fy
+        
 
-        left_elbow_distance = depth_image[y_left_elbow , x_left_elbow ] * depth_scale
-        z_left_elbow  = left_elbow_distance
-        x_world_left_elbow  = (x_left_elbow  - cx) * z_left_elbow  / fx
-        y_world_left_elbow  = (y_left_elbow  - cy) * z_left_elbow  / fy
+        # Linker Ellbogen
+        left_elbow_distance = depth_image[y_left_elbow, x_left_elbow] * depth_scale
+        z_left_elbow = left_elbow_distance
+        x_world_left_elbow = (x_left_elbow - cx) * z_left_elbow / fx
+        x_world_left_elbow = 1.25 * x_world_left_elbow
+        y_world_left_elbow = (y_left_elbow - cy) * z_left_elbow / fy
 
-        left_hand_distance = depth_image[y_left_hand , x_left_hand ] * depth_scale
-        z_left_hand  = left_hand_distance
-        x_world_left_hand  = (x_left_hand  - cx) * z_left_hand  / fx
-        y_world_left_hand  = (y_left_hand  - cy) * z_left_hand  / fy
+        # Linke Hand
+        left_hand_distance = depth_image[y_left_hand, x_left_hand] * depth_scale
+        z_left_hand = left_hand_distance
+        x_world_left_hand = (x_left_hand - cx) * z_left_hand / fx
+        x_world_left_hand = 2.41 * x_world_left_hand
+        y_world_left_hand = (y_left_hand - cy) * z_left_hand / fy
 
-        right_shoulder_distance = depth_image[y_right_shoulder , x_right_shoulder ] * depth_scale
-        z_right_shoulder  = right_shoulder_distance
-        x_world_right_shoulder  = (x_right_shoulder  - cx) * z_right_shoulder  / fx
-        y_world_right_shoulder  = (y_right_shoulder  - cy) * z_right_shoulder  / fy
+        # Rechte Schulter
+        right_shoulder_distance = depth_image[y_right_shoulder, x_right_shoulder] * depth_scale
+        z_right_shoulder = right_shoulder_distance
+        x_world_right_shoulder = (x_right_shoulder - cx) * z_right_shoulder / fx
+        x_world_right_shoulder = 0.78* x_world_right_shoulder
+        y_world_right_shoulder = (y_right_shoulder - cy) * z_right_shoulder / fy
 
-        right_elbow_distance = depth_image[y_right_elbow , x_right_elbow ] * depth_scale
-        z_right_elbow  = right_elbow_distance
-        x_world_right_elbow  = (x_right_elbow  - cx) * z_right_elbow  / fx
-        y_world_right_elbow  = (y_right_elbow  - cy) * z_right_elbow  / fy
+        # Rechter Ellbogen
+        right_elbow_distance = depth_image[y_right_elbow, x_right_elbow] * depth_scale
+        z_right_elbow = right_elbow_distance
+        x_world_right_elbow = (x_right_elbow - cx) * z_right_elbow / fx
+        x_world_right_elbow = 2.41 * x_world_right_elbow
+        y_world_right_elbow = (y_right_elbow - cy) * z_right_elbow / fy
 
-        right_hand_distance = depth_image[y_right_hand , x_right_hand ] * depth_scale
-        z_right_hand  = right_hand_distance
-        x_world_right_hand  = (x_right_hand  - cx) * z_right_hand  / fx
-        y_world_right_hand  = (y_right_hand  - cy) * z_right_hand  / fy
+        # Rechte Hand
+        right_hand_distance = depth_image[y_right_hand, x_right_hand] * depth_scale
+        z_right_hand = right_hand_distance
+        x_world_right_hand = (x_right_hand - cx) * z_right_hand / fx
+        x_world_right_hand = 2.41 * x_world_right_hand
+        y_world_right_hand = (y_right_hand - cy) * z_right_hand / fy
 
         #Kalman Filter für Schulter, Elbogen und Hand
         
@@ -183,7 +196,7 @@ while not rospy.is_shutdown():
         shoulder_trans =    calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
         elbow_trans =       calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
         hand_trans =        calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
-
+        rospy.logwarn(f"mittelpunkt: {shoulder_trans[0]}")
         #Erstelle punkte für den Publisher
         shoulder_point = PointStamped()
         shoulder_point.header.frame_id = "camera_link"
@@ -191,7 +204,7 @@ while not rospy.is_shutdown():
         shoulder_point.point.x = -shoulder_trans[0]    
         shoulder_point.point.y = shoulder_trans[2]
         shoulder_point.point.z = shoulder_trans[1]
-        rospy.logwarn(f"Schulter: {-shoulder_trans[0],shoulder_trans[2],shoulder_trans[1] }")
+        #rospy.logwarn(f"Schulter: {-shoulder_trans[0],shoulder_trans[2],shoulder_trans[1] }")
 
         elbow_point = PointStamped()
         elbow_point.header.frame_id = "camera_link"

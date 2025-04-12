@@ -82,13 +82,13 @@ def moveit_control_node():
             last_waypoint = waypoints[-1]    
             position = last_waypoint.position
             orientation = last_waypoint.orientation
-            coordinates = f"Position: {position.x}, {position.y}, {position.z}"
-            orientation_values = f"Orientation: {orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}"
+            coordinates = f"np.array([{position.x}, {position.y}, {position.z}"
+            orientation_values = f"{orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}])"
 
             joint_goal = move_group.get_current_joint_values()
             joint_values = ", ".join([f"{val:.4f}" for val in joint_goal])  # Formatierte Ausgabe der Gelenkwerte
             
-            print(coordinates + " | " + orientation_values)
+            print(coordinates + orientation_values)
             print(f"Joint Values: {joint_values}")  # Ausgabe der Gelenk-Werte
             continue
         
@@ -98,12 +98,12 @@ def moveit_control_node():
             break
 
 
-    now = datetime.now()
-    dt_string = now.strftime("%d%m%Y%H%M%S")    
-    print(dt_string)    
-    with open(dt_string, 'w') as f:
-        write = csv.writer(f)
-        write.writerow(waypoints)
+    # now = datetime.now()
+    # dt_string = now.strftime("%d%m%Y%H%M%S")    
+    # print(dt_string)    
+    # with open(dt_string, 'w') as f:
+    #     write = csv.writer(f)
+    #     write.writerow(waypoints)
 
     # Bewegung des Roboters zur Zielpose
     #rospy.loginfo("Bewege den Roboter zur Zielposition...")

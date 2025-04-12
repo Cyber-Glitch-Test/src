@@ -109,6 +109,9 @@ user = ""
 
 use_built_in_rb_control = True
 
+cmd_nr = 0
+cmd_list = []
+
 #======Robot Control Class======
 
 class RobotControl:
@@ -116,6 +119,7 @@ class RobotControl:
     def __init__(self, group_name):
 
 <<<<<<< HEAD
+        if use_built_in_rb_control:       
 =======
         self.gripper_controller = GripperController()
 
@@ -189,6 +193,13 @@ class RobotControl:
             self.move_group.set_max_velocity_scaling_factor(0.1)
             self.move_group.set_max_acceleration_scaling_factor(0.1)
 
+        if use_built_in_rb_control:  
+
+            self.command_pub = rospy.Publisher('/robot/command', robot_msgs, queue_size=10)
+            self.status_sub = rospy.Subscriber('/robot/status', String, self.status_callback)
+            self.status_event = threading.Event()
+            self.completed_cmds = 0
+            self.expected_cmds = 0
 
         while True:
             user = input('Gebe initialen ein: ')
@@ -592,6 +603,7 @@ class RobotControl:
                 return False
         return True
 
+<<<<<<< HEAD
 
 
     def publish_rb_cmds(self,commands):
@@ -661,6 +673,12 @@ class RobotControl:
         next_board = target.copy()
         over_board = target.copy()
         next_board[1] = next_board[1] + distance
+=======
+    def place_on_board(self,target,speed,gripper_val = 'open'):
+        next_board = copy(target)
+        over_board = copy(target)
+        next_board[1] = next_board[1] - 0.2
+>>>>>>> e289dddfc0a74355a5acb71144f55a11b40d5f7b
         next_board[2] = next_board[2] + 0.04
         over_board[2] = over_board[2] + 0.04
         
@@ -700,6 +718,7 @@ class RobotControl:
 #======Gripper Control======
 class GripperController:
     def __init__(self):
+<<<<<<< HEAD
         #rospy.init_node('gripper_controller')
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
         self.command = outputMsg.Robotiq2FGripper_robot_output()
@@ -986,6 +1005,7 @@ class get_Hum_mertics:
             else:
                 left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
 
+
             print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
             with open('armlaengen.csv','a', newline='') as f:
                 writer = csv.writer(f)
@@ -1001,6 +1021,8 @@ class Start(smach.State):
         smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end','test'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+
+        if( user ==  "test" ):
 
             print("\n--- Hauptmenü ---")
             print("1. MPickUp")

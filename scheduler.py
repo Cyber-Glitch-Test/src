@@ -603,11 +603,6 @@ class RobotControl:
                 return False
         return True
 
-<<<<<<< HEAD
-
-
-    def publish_rb_cmds(self,commands):
-=======
     def status_callback(self, msg):
         if msg.data == "done":
             self.completed_cmds += 1
@@ -623,7 +618,6 @@ class RobotControl:
     def publish_rb_cmds(self, commands):
         self.completed_cmds = 0
         self.expected_cmds = 0
->>>>>>> e289dddfc0a74355a5acb71144f55a11b40d5f7b
         cmd_nr = 0
 
         for cmd in commands:
@@ -666,7 +660,6 @@ class RobotControl:
 
         return True
 
-<<<<<<< HEAD
     def place_on_board(self,target,speed,distance=0.2):
         print( target)
         speed = 10

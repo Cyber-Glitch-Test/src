@@ -118,13 +118,9 @@ class RobotControl:
     
     def __init__(self, group_name):
 
-<<<<<<< HEAD
-        if use_built_in_rb_control:       
-=======
         self.gripper_controller = GripperController()
 
-        if not use_built_in_rb_control:       
->>>>>>> e289dddfc0a74355a5acb71144f55a11b40d5f7b
+    
         if use_built_in_rb_control:       
 
             #Initialisiert die MoveIt-Gruppe und die Greifer-Node

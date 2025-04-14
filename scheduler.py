@@ -24,6 +24,7 @@ from moveit_msgs.msg import RobotTrajectory # type: ignore
 from trajectory_msgs.msg import JointTrajectoryPoint # type: ignore
 from std_msgs.msg import String # type: ignore
 from robotiq_2f_gripper_control.msg import _Robotiq2FGripper_robot_input  as inputMsg # type: ignore
+from robotiq_2f_gripper_control.msg import Robotiq2FGripper_robot_output, Robotiq2FGripper_robot_input # type: ignore
 
 #test
 #======Konstanten====== 
@@ -33,14 +34,14 @@ tcp_to_hum = [0.4885036803216398, 0.4954440365879754, -0.506671308776122, 0.5091
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
 
-rb_arm_on_m =  [np.array([0.2631105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.2631105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
-                np.array([0.3431105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+rb_arm_on_m =  [np.array([0.2641105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2641105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2641105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.2641105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3441105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3441105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3441105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
+                np.array([0.3441105225136129,    -0.02613901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.4231105225136129,    0.11513901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.4231105225136129,    0.06813901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
                 np.array([0.4231105225136129,    0.02113901314207496, 0.19474944789272417 ,0.018266303149021744, 0.9997308933491994, -0.010420321910118447, 0.009792851666864008]),
@@ -67,7 +68,7 @@ rb_arm_transition_over_gb1_2 =  np.array([0.4907380230958256, -0.459838479954196
 rb_arm_transition_over_gb1_3 =  np.array([0.4907380230958256, -0.45983847995419647, 0.35395950043452323 ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
 
 rb_arm_transition_over_gb2_1 =  np.array([0.5486854170473805, -0.3885145028949433, 0.3814376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
-rb_arm_transition_over_gb2_2 =  np.array([0.5486854170473805, -0.4685145028949433, 0.3514376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
+rb_arm_transition_over_gb2_2 =  np.array([0.5486854170473805, -0.4685145028949433, 0.3514376455406984 ,-0.0019061535444672643, 0.9999968279727596, 0.0016234889408431768, 0.00027369096276817686])
 rb_arm_transition_over_gb2_3 =  np.array([0.5486854170473805, -0.27057393609447655, 0.35141967557281056 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
 
 rb_arm_transition_over_gb3_1 =  np.array([0.6402808547359244, -0.26790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
@@ -84,10 +85,10 @@ rb_arm_on_pcb2  =  [np.array([0.40558901752394194, -0.26155397106696143, 0.15286
                     np.array([]),
                     np.array([])]
 
-rb_arm_on_battery =[np.array([0.6064043378480363, -0.019193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
-                    np.array([0.6064043378480363,  0.103193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
-                    np.array([0.7079493583489366, -0.019193581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
-                    np.array([0.7079493583489366,  0.101393581297668794, 0.15491817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502])]
+rb_arm_on_battery =[np.array([0.6057899329831553, -0.019193581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.6057899329831553,  0.103193581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.7017839913625549, -0.019193581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
+                    np.array([0.7017839913625549,  0.101393581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502])]
 
 
 #Konstanten für ergonomische Berechnungen
@@ -109,8 +110,9 @@ user = ""
 
 use_built_in_rb_control = True
 
-cmd_nr = 0
-cmd_list = []
+
+# cmd_nr = 0
+# cmd_buffer = []
 
 #======Robot Control Class======
 
@@ -189,18 +191,22 @@ class RobotControl:
             self.move_group.set_max_velocity_scaling_factor(0.1)
             self.move_group.set_max_acceleration_scaling_factor(0.1)
 
-        if use_built_in_rb_control:  
+        if not use_built_in_rb_control:  
 
             self.command_pub = rospy.Publisher('/robot/command', robot_msgs, queue_size=10)
             self.status_sub = rospy.Subscriber('/robot/status', String, self.status_callback)
             self.status_event = threading.Event()
             self.completed_cmds = 0
             self.expected_cmds = 0
+            self.cmd_nr = 0
+            self.cmd_buffer = []
+
+
 
         while True:
-            user = input('Gebe initialen ein: ')
+            self.user = input('Gebe initialen ein: ')
             if (user == ""):
-                user = "test"
+                self.user = "test"
                 print(f"user: {user}")
             break
         
@@ -485,7 +491,7 @@ class RobotControl:
 
         return pose
 
-    def pick_up(self,target):
+    def pick_up(self,target,speed=10):
 
 
         over_target = target.copy()
@@ -505,19 +511,19 @@ class RobotControl:
 
             return True
 
-        if not self.move_to_target(self.convert_to_pose(over_target), 5):
+        if not self.move_to_target(self.convert_to_pose(over_target),speed):
             return False
         
         if not self.gripper_controller.send_gripper_command('open'):
-            return False
+           return False
 
-        if not self.move_to_target_carth(self.convert_to_pose(target), 10):
+        if not self.move_to_target_carth(self.convert_to_pose(target), speed * 0.5):
             return False
         
         if not self.gripper_controller.send_gripper_command('close'):
             return False
 
-        if not self.move_to_target_carth(self.convert_to_pose(over_target), 5):
+        if not self.move_to_target_carth(self.convert_to_pose(over_target), speed):
             return False
         
         return True
@@ -607,23 +613,28 @@ class RobotControl:
                 self.status_event.set()
 
     def wait_for_all_done(self, timeout=15.0):
-        success = self.status_event.wait(timeout)
+        success = self.status_event.wait(timeout=self.cmd_nr*timeout)
         self.status_event.clear()
         return success
 
     def publish_rb_cmds(self, commands):
-        self.completed_cmds = 0
-        self.expected_cmds = 0
-        cmd_nr = 0
+               
 
         for cmd in commands:
             if cmd["type"] == "gripper":
                 # Alle bisherigen Bewegungen wurden gesendet, jetzt auf Abschluss warten
+                rospy.loginfo(f"Gesendet: {self.cmd_buffer}")
+                for cmd2 in self.cmd_buffer:
+                    self.command_pub.publish(cmd2)
+                    #rospy.loginfo(f"Gesendet: {cmd2['type']} #{self.cmd_nr}")
                 rospy.loginfo("Warte auf Abschluss aller bisherigen Bewegungen...")
                 if not self.wait_for_all_done():
                     rospy.logwarn("Timeout beim Warten auf Bewegungsabschluss vor Greiferkommando.")
                     return False
-
+                self.completed_cmds = 0
+                self.expected_cmds = 0
+                self.cmd_nr = 0
+                self.cmd_buffer = []
                 # Jetzt Greiferbefehl ausführen
                 rospy.loginfo("Führe Greiferbefehl aus.")
                 self.gripper_controller.send_gripper_command(cmd["action"])
@@ -632,42 +643,41 @@ class RobotControl:
 
             # Bewegungscmd vorbereiten
             msg = robot_msgs()
-            msg.nr = cmd_nr
+            msg.nr = self.cmd_nr
             msg.type = cmd["type"]
 
             if cmd["type"] == "joint":
                 msg.joints = list(cmd["joints"])
+                msg.pose = Pose()
             elif cmd["type"] in ["cartesian", "p2p"]:
                 msg.pose = cmd["pose"]
+                msg.joints = (0,0,0,0,0,0)
+            
+            self.cmd_buffer.append(msg)
 
             # Sende den Befehl
-            self.command_pub.publish(msg)
-            rospy.loginfo(f"Gesendet: {cmd['type']} #{cmd_nr}")
-            cmd_nr += 1
+            #self.command_pub.publish(msg)
+            
+            self.cmd_nr += 1
             self.expected_cmds += 1
             rospy.sleep(0.05)  
-
-        # Nach der letzten Bewegung warten (optional, je nach Bedarf)
-        if self.expected_cmds > 0:
-            rospy.loginfo("Warte auf Abschluss aller Bewegungen.")
-            if not self.wait_for_all_done():
-                rospy.logwarn("Timeout beim finalen Warten.")
-                return False
+            
+        return True
+        # # Nach der letzten Bewegung warten (optional, je nach Bedarf)
+        # if self.expected_cmds > 0:
+        #     rospy.loginfo("Warte auf Abschluss aller Bewegungen.")
+        #     if not self.wait_for_all_done():
+        #         rospy.logwarn("Timeout beim finalen Warten.")
+        #         return False
 
         return True
 
-    def place_on_board(self,target,speed,distance=0.2):
-        print( target)
-        speed = 10
+
+    def place_on_board(self,target,speed,distance=0.2,gripper_val = 'open'):
         next_board = target.copy()
         over_board = target.copy()
         next_board[1] = next_board[1] + distance
-=======
-    def place_on_board(self,target,speed,gripper_val = 'open'):
-        next_board = copy(target)
-        over_board = copy(target)
-        next_board[1] = next_board[1] - 0.2
->>>>>>> e289dddfc0a74355a5acb71144f55a11b40d5f7b
+
         next_board[2] = next_board[2] + 0.04
         over_board[2] = over_board[2] + 0.04
         
@@ -705,116 +715,30 @@ class RobotControl:
         return True
 
 #======Gripper Control======
+
+
 class GripperController:
     def __init__(self):
-<<<<<<< HEAD
-        #rospy.init_node('gripper_controller')
-        self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg.Robotiq2FGripper_robot_output, queue_size=10)
-        self.command = outputMsg.Robotiq2FGripper_robot_output()
-        self.current_status = None  # Speichert den aktuellen Status
-        self.gripper_status_sub = rospy.Subscriber(
-            "Robotiq2FGripperRobotInput", 
-            inputMsg.Robotiq2FGripper_robot_input,
-            self.statusInterpreter
-        )
-
-    def statusInterpreter(self, status):
-        """Callback-Funktion für Statusupdates."""
-        self.current_status = status  # Status speichern
-        output = []
-        
-        # gSTA - Gripper status
-        if status.gSTA == 0:
-            output.append('Gripper is in reset (or automatic release) state')
-        elif status.gSTA == 1:
-            output.append('Activation in progress')
-        elif status.gSTA == 2:
-            output.append('Status not used')
-        elif status.gSTA == 3:
-            output.append('Gripper activated')
-
-        # gOBJ - Object detection
-        if status.gOBJ == 0:
-            output.append('Fingers are in motion')
-        elif status.gOBJ == 1:
-            output.append('Fingers stopped while opening (contact detected)')
-        elif status.gOBJ == 2:
-            output.append('Fingers closed (object detected)' if status.gGTO == 1 else 'Fingers at closed position')
-        elif status.gOBJ == 3:
-            output.append('Fingers fully open')
-
-        # gFLT - Fault status
-        if status.gFLT == 0x05:
-            output.append('PRIORITY FAULT: Action delayed (complete initialization first)')
-        elif status.gFLT == 0x07:
-            output.append('PRIORITY FAULT: Activation required before action')
-        elif status.gFLT == 0x09:
-            output.append('MINOR FAULT: Communication chip not ready')
-        elif status.gFLT == 0x0B:
-            output.append('MINOR FAULT: Automatic release in progress')
-        elif status.gFLT == 0x0E:
-            output.append('MAJOR FAULT: Overcurrent triggered')
-        elif status.gFLT == 0x0F:
-            output.append('MAJOR FAULT: Automatic release completed')
-
-        # Zusätzliche nützliche Info
-        if status.gGTO == 1:
-            output.append('GoTo position command active')
-        
-        status_str = " | ".join(output)
-        #rospy.loginfo(f"Gripper status: {status_str}")
-        return status_str
-
-    def send_gripper_command(self, action_type):
-            """Sendet einen Befehl an den Greifer und überprüft danach den Status."""
-            if action_type == 'open':
-                self.command.rPR = 0
-            elif action_type == 'close':
-                self.command.rPR = 255
-            elif action_type == 'activate':
-                self.command.rACT = 1
-                self.command.rGTO = 1
-                self.command.rSP = 255
-                self.command.rFR = 150
-            elif action_type == 'deactivate':
-                self.command.rACT = 0
-            else:
-                rospy.logwarn(f"Unbekannter Befehl: {action_type}")
-                return False
-
-            self.pub.publish(self.command)
-            rospy.sleep(2) 
-
-            if self.current_status is None:
-                rospy.logwarn("Kein Status vom Greifer empfangen.")
-                #return False
-
-        
-
-            return True
-#======Get Hum Data======
-=======
-        # Initialisiert Publisher und Subscriber
-        self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', outputMsg, queue_size=10)
+        self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_output, queue_size=10)
         self.status = None
-        rospy.Subscriber("Robotiq2FGripperRobotInput", inputMsg, self.status_callback)
-
+        rospy.Subscriber("Robotiq2FGripperRobotInput", Robotiq2FGripper_robot_input, self.status_callback)
+        self.command = Robotiq2FGripper_robot_output()
     def status_callback(self, msg):
         self.status = msg
 
     def wait_for_gripper_stop(self, timeout=5.0):
-        """Warte, bis der Gripper zum Stillstand gekommen ist oder Fehler erkannt wird."""
         start_time = rospy.Time.now()
         rate = rospy.Rate(10)  # 10 Hz
 
         while not rospy.is_shutdown():
             if self.status is None:
-                rospy.logwarn("Kein Status empfangen...")
+                rospy.logwarn("Kein Gripperstatus")
             else:
                 if self.status.gFLT == 0x09:
                     rospy.logerr("Kommunikationsfehler: Chip nicht bereit.")
                     return False
-                elif self.status.gOBJ in [1, 2, 3]:  # Bewegung abgeschlossen
+                elif self.status.gSTA == 3:
+                    rospy.sleep(0.5) 
                     return True
 
             if (rospy.Time.now() - start_time).to_sec() > timeout:
@@ -823,17 +747,17 @@ class GripperController:
 
             rate.sleep()
 
-        return False  # Falls node abgeschaltet wird
+
+        return False
 
     def send_gripper_command(self, action_type):
-        """Sendet Befehl und wartet auf Abschluss."""
-        self.command = outputMsg()
 
         if action_type == 'open':
             self.command.rPR = 0
         elif action_type == 'close':
             self.command.rPR = 255
         elif action_type == 'activate':
+            
             self.command.rACT = 1
             self.command.rGTO = 1
             self.command.rSP = 255
@@ -844,10 +768,9 @@ class GripperController:
             self.command.rPR = max(0, min(255, int(action_type)))
 
         self.pub.publish(self.command)
-
         rospy.loginfo(f"Gripper-Befehl '{action_type}' gesendet – warte auf Abschluss...")
         return self.wait_for_gripper_stop()
->>>>>>> e289dddfc0a74355a5acb71144f55a11b40d5f7b
+        #return True
 
 #======Get Hum Data======
 class get_Hum_mertics:
@@ -935,8 +858,8 @@ class get_Hum_mertics:
 
         with open('armlaengen.csv', 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
-            writer.writerow([f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
+            writer.writerow([f'{robot_control.user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
+            writer.writerow([f'{robot_control.user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
 
     def calc_euclidean_distance(self, point1, point2):
     #bestimme den euclidischen Abstand zwischen zwei Punkten
@@ -984,22 +907,16 @@ class get_Hum_mertics:
             left_elbow = np.array([self.leftelbowkoords[0],self.leftelbowkoords[1],self.leftelbowkoords[2]])
             left_hand = np.array([self.lefthandkoords[0],self.lefthandkoords[1],self.lefthandkoords[2]])
 
-            if not(all(x == 0 for x in right_shoulder)) and not(all(x == 0 for x in right_elbow)) and not(all(x == 0 for x in right_hand)):
-                right_angle = None
-            else:
-                right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
 
-            if not(all(x == 0 for x in left_shoulder)) and not(all(x == 0 for x in left_elbow)) and not(all(x == 0 for x in left_hand)):
-                left_angle = None
-            else:
-                left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
+            right_angle = self.calc_angel(right_shoulder,right_elbow,right_hand)
+            left_angle = self.calc_angel(left_shoulder,left_elbow,left_hand)
 
 
             print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
             with open('armlaengen.csv','a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
-                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel links:  {left_angle}'])
+                writer.writerow([f'{robot_control.user } {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
+                writer.writerow([f'{robot_control.user} {rospy.Time.now()} elbogenwinkel links:  {left_angle}'])
             #return elbowangle
 
 robot_control = RobotControl("manipulator")
@@ -1011,7 +928,7 @@ class Start(smach.State):
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
-        if( user ==  "test" ):
+        if( robot_control.user ==  "test" ):
 
             print("\n--- Hauptmenü ---")
             print("1. MPickUp")
@@ -1097,8 +1014,10 @@ class MPickUp(smach.State):
     def execute(self, userdata):
         #nehme Motor1 auf
         ### Kommentieren für testen
+        # if not robot_control.gripper_controller.send_gripper_command('reset'):
+        #    return 'aborted'
         if not robot_control.gripper_controller.send_gripper_command('activate'):
-            return 'aborted'
+           return 'aborted'
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -1109,17 +1028,17 @@ class MPickUp(smach.State):
 
                 if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
                     return 'aborted'
-                if not robot_control.gripper_controller.send_gripper_command('close'):
-                    return 'aborted'
-                if not robot_control.gripper_controller.send_gripper_command('open'):
-                    return 'aborted'
+                # if not robot_control.gripper_controller.send_gripper_command('close'):
+                #     return 'aborted'
+                # if not robot_control.gripper_controller.send_gripper_command('open'):
+                #     return 'aborted'
                 # plan = []
                 # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
                 # if not robot_control.move_to_taget_plan(plan,10):
                 #     return 'aborted'
-                if not robot_control.pick_up(rb_arm_on_m[self.counter]):
+                if not robot_control.pick_up(rb_arm_on_m[7],20):
                     return 'aborted'
-                if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747), 20):
+                if not robot_control.move_to_joint_goal( (-3.8497, -1.0055, -2.3556, -2.8687, -0.7227, -1.6213), 20):
                     return 'aborted'
                 self.counter += 1
                 rospy.loginfo(f"Nehme Motor {self.counter} auf")
@@ -1252,7 +1171,7 @@ class BatteryPickUpAndPositioning(smach.State):
                 #     return 'aborted' 
                 if not robot_control.pick_up(rb_arm_on_battery[self.counter]):
                     return 'aborted' 
-                if not robot_control.place_on_board(rb_arm_transition_over_gb2_2 , 10):
+                if not robot_control.place_on_board(rb_arm_transition_over_gb2_2 , 10,0.2,70):
                     return 'aborted'
 
                 return 'succeeded'
@@ -1322,9 +1241,9 @@ if __name__ == "__main__":
 
     rospy.init_node('ur5_moveit_control', anonymous=True)
     moveit_commander.roscpp_initialize(sys.argv)
-
+    # robot_control.gripper_controller.send_gripper_command('reset')
     robot_control.gripper_controller.send_gripper_command('activate')
-    robot_control.gripper_controller.send_gripper_command('open')
+    # robot_control.gripper_controller.send_gripper_command('open')
 
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:

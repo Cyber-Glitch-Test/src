@@ -156,7 +156,7 @@ while not rospy.is_shutdown():
         left_hand_distance = depth_image[y_left_hand, x_left_hand] * depth_scale
         z_left_hand = left_hand_distance
         x_world_left_hand = (x_left_hand - cx) * z_left_hand / fx
-        x_world_left_hand = 2.41 * x_world_left_hand
+        x_world_left_hand = 0.78* x_world_left_hand
         y_world_left_hand = (y_left_hand - cy) * z_left_hand / fy
 
         # Rechte Schulter
@@ -170,14 +170,14 @@ while not rospy.is_shutdown():
         right_elbow_distance = depth_image[y_right_elbow, x_right_elbow] * depth_scale
         z_right_elbow = right_elbow_distance
         x_world_right_elbow = (x_right_elbow - cx) * z_right_elbow / fx
-        x_world_right_elbow = 2.41 * x_world_right_elbow
+        x_world_right_elbow = 0.78 * x_world_right_elbow
         y_world_right_elbow = (y_right_elbow - cy) * z_right_elbow / fy
 
         # Rechte Hand
         right_hand_distance = depth_image[y_right_hand, x_right_hand] * depth_scale
         z_right_hand = right_hand_distance
         x_world_right_hand = (x_right_hand - cx) * z_right_hand / fx
-        x_world_right_hand = 2.41 * x_world_right_hand
+        x_world_right_hand = 0.78 * x_world_right_hand
         y_world_right_hand = (y_right_hand - cy) * z_right_hand / fy
 
         #Kalman Filter für Schulter, Elbogen und Hand

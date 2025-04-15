@@ -92,7 +92,7 @@ rb_arm_on_battery =[np.array([0.6057899329831553, -0.019193581297668794, 0.15691
                     np.array([0.7017839913625549,  0.101393581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502])]
 
 
-#Konstanten für ergonomische Berechnungen
+#Konstanten für ergonomie Berechnungen
 forearmlenghdin = 0.2688   # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.342  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 
@@ -109,14 +109,10 @@ savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
 
-use_built_in_rb_control = False
+use_built_in_rb_control = True
 
-
-# cmd_nr = 0
-# cmd_buffer = []
 
 #======Robot Control Class======
-
 class RobotControl:
     
     def __init__(self, group_name):
@@ -133,11 +129,11 @@ class RobotControl:
             self.scene = PlanningSceneInterface()
             self.robot = moveit_commander.RobotCommander()
 
-            rospy.sleep(2)  # Kurze Pause, damit die Szene initialisiert wird
+            rospy.sleep(2)  
 
             
 
-            # Tischfläche in MoveIt zur Kollisionserkennung hinzufügen
+            # Tischfläche, Wände ung Grundplatten in MoveIt zur Kollisionserkennung hinzufügen
             planning_frame = self.move_group.get_planning_frame()
             rospy.loginfo("Planungsrahmen: %s", planning_frame)
 
@@ -242,7 +238,7 @@ class RobotControl:
                 return False
             return True
         
-        #Bewegt den Roboter zu einer Zielpose
+        #Bewegt den Roboter zu einer Pose
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         self.move_group.set_pose_target(target_pose)
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
@@ -258,7 +254,7 @@ class RobotControl:
             return False
 
     def move_to_target_carth(self, target_pose, speed):
-        #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
+        #Bewegt den Roboter in einer Linie zur Zielpose
         if not use_built_in_rb_control:
             command = [{'type':'cartesian','pose':target_pose}]
             if not self.publish_rb_cmds(command):
@@ -284,7 +280,7 @@ class RobotControl:
             return False
         
     def move_to_target_carth_plan(self, waypoints, speed):
-        #Bewegt den Roboter in einer kartesischen Linie zur Zielpose
+        #Bewegt den Roboter in einer Linie zur Zielpose mit mehreren Waypoints
         if not use_built_in_rb_control:
             for pose in waypoints:
                 command = [{'type':'cartesian','pose':pose}]
@@ -353,19 +349,20 @@ class RobotControl:
             return False
 
     def stop_robot(self):
+        ###wird nicht benutzt
         #Stoppt die Bewegung des Roboters
         self.move_group.stop()
         rospy.loginfo("Roboter gestoppt!")
 
     def reset_robot(self):
+        ###wird nicht benutzt
         #Setzt den Roboter auf die Home-Position zurück
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
     def handover_to_hum(self,speed):
-
-        #führe die Roboter bewegung zum Menschen aus
+        #führe die Roboter bewegung zum Probanten aus
         handover_pose_end = Pose()
         try:
             handover_pose_end =  self.point_inside(self.calc_handover_position_schoulder())
@@ -377,7 +374,8 @@ class RobotControl:
 
         if not use_built_in_rb_control:
             command =   [{'type':'cartesian','pose':handover_pose_start},
-                         {'type':'cartesian','pose':handover_pose_end}]
+                         {'type':'cartesian','pose':handover_pose_end},
+                         {'type':'stop'}]
             
             if not self.publish_rb_cmds(command):
                 return False
@@ -393,9 +391,8 @@ class RobotControl:
         return True
 
     def calc_handover_position_schoulder(self):
-        #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten
+        #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten aus Tracking
         
-
         for i in range(1):
             for sek in range(10):
                 broadcaster = tf.TransformBroadcaster()
@@ -471,6 +468,7 @@ class RobotControl:
             return hand_over_position
         
     def reset_robot(self):
+        #### nicht benutzt
         self.move_group.set_named_target("home")
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
@@ -493,7 +491,7 @@ class RobotControl:
         return pose
 
     def pick_up(self,target,speed=10):
-
+        #Nehme Bautteile auf die bei Target liegen
 
         over_target = target.copy()
         over_target[2] = over_target[2] + 0.1  
@@ -530,7 +528,7 @@ class RobotControl:
         return True
     
     def pick_up_plan(self,target):
-
+        ###wird nicht benutzt
 
         over_target = target.copy()
         over_target[2] = over_target[2] + 0.1  
@@ -544,14 +542,14 @@ class RobotControl:
     def planner(self, command_list, speed):
         self.move_group.set_max_velocity_scaling_factor(speed / 100.0)
         waypoints = []
-
+        ############# wird nicht verwendet ##############
         def extract_plan(plan_result):
-            # Extrahiert das eigentliche Plan-Objekt aus einem Tuple
+
             if isinstance(plan_result, tuple):
                 for item in plan_result:
                     if hasattr(item, "joint_trajectory"):
                         return item
-                return None  # kein gültiger Plan gefunden
+                return None  
             return plan_result
 
         for command in command_list:
@@ -560,7 +558,7 @@ class RobotControl:
                     waypoints.append(command['pose'])
 
                 else:
-                    # Wenn kartesische Waypoints vorhanden sind, führe sie zuerst aus
+
                     if waypoints:
                         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
                         if fraction < 1.0:
@@ -568,7 +566,7 @@ class RobotControl:
                             return False
                         if not self.move_group.execute(plan, wait=True):
                             return False
-                        waypoints = []  # Zurücksetzen!
+                        waypoints = []
 
                     if command['type'] == "joint":
                         self.move_group.set_joint_value_target(command["joints"])
@@ -596,7 +594,7 @@ class RobotControl:
                 rospy.logerr(f"Fehler beim Verarbeiten des Befehls: {e}")
                 return False
 
-        # Noch vorhandene Waypoints am Ende ausführen
+
         if waypoints:
             (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
             if fraction < 1.0:
@@ -607,6 +605,7 @@ class RobotControl:
         return True
 
     def status_callback(self, msg):
+        #callback von bewegungssteuerung
         if msg.data == "done":
             self.completed_cmds += 1
             rospy.loginfo(f"Bewegung bestätigt: {self.completed_cmds}/{self.expected_cmds}")
@@ -614,16 +613,25 @@ class RobotControl:
                 self.status_event.set()
 
     def wait_for_all_done(self, timeout=15.0):
+        #warte auf Bestätigung der übermittelten bewegungen
         success = self.status_event.wait(timeout=self.cmd_nr*timeout)
         self.status_event.clear()
         return success
 
     def publish_rb_cmds(self, commands):
-               
+        #Publichen der Bewegungsbefehle als Batch
 
         for cmd in commands:
-            if cmd["type"] == "gripper":
-                # Alle bisherigen Bewegungen wurden gesendet, jetzt auf Abschluss warten
+            if cmd["type"] == "stop":
+                for cmd2 in self.cmd_buffer:
+                    self.command_pub.publish(cmd2)
+                    self.completed_cmds = 0
+                    self.expected_cmds = 0
+                    self.cmd_nr = 0
+                    self.cmd_buffer = []
+                continue
+            elif cmd["type"] == "gripper":
+
                 rospy.loginfo(f"Gesendet: {self.cmd_buffer}")
                 for cmd2 in self.cmd_buffer:
                     self.command_pub.publish(cmd2)
@@ -636,13 +644,12 @@ class RobotControl:
                 self.expected_cmds = 0
                 self.cmd_nr = 0
                 self.cmd_buffer = []
-                # Jetzt Greiferbefehl ausführen
                 rospy.loginfo("Führe Greiferbefehl aus.")
                 self.gripper_controller.send_gripper_command(cmd["action"])
-                rospy.sleep(1)  # Optional kleine Pause nach Greifer
+                rospy.sleep(1)  
                 continue
 
-            # Bewegungscmd vorbereiten
+
             msg = robot_msgs()
             msg.nr = self.cmd_nr
             msg.type = cmd["type"]
@@ -656,25 +663,18 @@ class RobotControl:
             
             self.cmd_buffer.append(msg)
 
-            # Sende den Befehl
-            #self.command_pub.publish(msg)
+
             
             self.cmd_nr += 1
             self.expected_cmds += 1
             rospy.sleep(0.05)  
             
         return True
-        # # Nach der letzten Bewegung warten (optional, je nach Bedarf)
-        # if self.expected_cmds > 0:
-        #     rospy.loginfo("Warte auf Abschluss aller Bewegungen.")
-        #     if not self.wait_for_all_done():
-        #         rospy.logwarn("Timeout beim finalen Warten.")
-        #         return False
-
-        return True
 
 
     def place_on_board(self,target,speed,distance=0.2,gripper_val = 'open'):
+        #Bautteile auf grundplatte ablegen
+
         next_board = target.copy()
         over_board = target.copy()
         next_board[1] = next_board[1] + distance
@@ -683,18 +683,18 @@ class RobotControl:
         over_board[2] = over_board[2] + 0.04
         
         if not use_built_in_rb_control:
-            command =   [{'type':'cartesian','pose':next_board},
-                         {'type':'cartesian','pose':over_board},
-                         {'type':'cartesian','pose':target},
+            command =   [{'type':'cartesian','pose':self.convert_to_pose(next_board)},
+                         {'type':'cartesian','pose':self.convert_to_pose(over_board)},
+                         {'type':'cartesian','pose':self.convert_to_pose(target)},
                          {'type':'gripper','action':gripper_val},
-                         {'type':'cartesian','pose':over_board},
-                         {'type':'cartesian','pose':next_board}]
+                         {'type':'cartesian','pose':self.convert_to_pose(over_board)},
+                         {'type':'cartesian','pose':self.convert_to_pose(next_board)}]
 
             if not self.publish_rb_cmds(command):
                 return False
             return True
 
-        #0.4907380230958256, -0.45983847995419647, 0.35395950043452323 
+
 
         plan1 = []
         plan1.append(self.convert_to_pose(next_board))
@@ -719,7 +719,6 @@ class RobotControl:
         return True
 
 #======Gripper Control======
-
 class GripperController:
     def __init__(self):
         self.pub = rospy.Publisher('Robotiq2FGripperRobotOutput', Robotiq2FGripper_robot_output, queue_size=10)
@@ -730,8 +729,9 @@ class GripperController:
         self.status = msg
 
     def wait_for_gripper_stop(self, timeout=5.0):
+        #warte auf Gripper ausführung
         start_time = rospy.Time.now()
-        rate = rospy.Rate(10)  # 10 Hz
+        rate = rospy.Rate(10)  
 
         while not rospy.is_shutdown():
             if self.status is None:
@@ -754,7 +754,7 @@ class GripperController:
         return False
 
     def send_gripper_command(self, action_type):
-
+        #senden der Gripper cmds an die Gripper Node -> Robotiq
         if action_type == 'open':
             self.command.rPR = 0
         elif action_type == 'close':
@@ -796,7 +796,7 @@ class get_Hum_mertics:
         self.stop_event = threading.Event()
 
     def camera_listener(self):
-    #lese tf für Schulter Elebogen und Hand aus
+    #lese tf für Mittelpunkte Schulter Elebogen und Hand aus 
         try:
 
             time = rospy.Time(0)
@@ -873,6 +873,7 @@ class get_Hum_mertics:
         return math.sqrt(distance)
     
     def calc_angel(self, point1, point2, point3):
+    #Berechne den Winkel zweier Graden
         vec1  = point1-point2
         vec2  = point2-point3
 
@@ -881,7 +882,7 @@ class get_Hum_mertics:
         return angle
 
     def is_inside_norm(self):
-        #Überprüft ob Ober und Unterarm innerhalb des 5. und 95 Perzentil sind
+    #Überprüft ob Ober und Unterarm innerhalb des 5. und 95 Perzentil sind
 
         if (self.uperarmlenght <= upperarmlenghtdin_max) and (self.uperarmlenght >= upperarmlenghtdin_min):
             self.inside_norm_upper = True
@@ -898,7 +899,7 @@ class get_Hum_mertics:
             self.forearmlenght = forearmlenghdin
     
     def get_arm_angels(self):
-
+    #Lese Arm Koords aus und über gebe an Winkel berechnung + Logs
         while not self.stop_event.is_set():
             self.camera_listener_arms()
 
@@ -930,7 +931,7 @@ class Start(smach.State):
         smach.State.__init__(self, outcomes=['MPickUp','MHoldHD','MPositioning','PCB1PickUpAndPositioning','PCB2PickUpAndPositioning','BatteryPickUpAndPositioning','succeeded_end','test'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-
+        #Hauptmenuü
         if( robot_control.user ==  "test" ):
 
             print("\n--- Hauptmenü ---")
@@ -1015,7 +1016,7 @@ class MPickUp(smach.State):
         #self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
-        #nehme Motor1 auf
+        #nehme Motor auf
         ### Kommentieren für testen
         # if not robot_control.gripper_controller.send_gripper_command('reset'):
         #    return 'aborted'
@@ -1024,7 +1025,7 @@ class MPickUp(smach.State):
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-        ''''DEBUG BLOCK ZUM TESTEN'''
+
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
@@ -1039,7 +1040,7 @@ class MPickUp(smach.State):
                 # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
                 # if not robot_control.move_to_taget_plan(plan,10):
                 #     return 'aborted'
-                if not robot_control.pick_up(rb_arm_on_m[7],20):
+                if not robot_control.pick_up(rb_arm_on_m[self.counter],20):
                     return 'aborted'
                 if not robot_control.move_to_joint_goal( (-3.8497, -1.0055, -2.3556, -2.8687, -0.7227, -1.6213), 20):
                     return 'aborted'
@@ -1054,15 +1055,28 @@ class MHold(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','aborted'])
     def execute(self, userdata):
+        #unergonomische übergabe zu Probanten
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        newuser = input('enter y/n: ')
+        while True:
+            if newuser == "y":
+                self.hm.stop_event = threading.Event()
+                thread = threading.Thread(target=self.hm.get_arm_angels)
+                thread.start()
+                input("Drücke Enter, um zu stoppen...\n")
+                self.hm.stop_event.set()
+                thread.join(timeout=2.0)
+            elif newuser == "n":
+                rospy.loginfo('weiter')
+                return 'succeeded'
                 
 class MHoldHD(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_end','aborted'])
         self.hm = get_Hum_mertics()
     def execute(self, userdata):
+        #ergonomische übergabe zu Probanten
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-
         newuser = input('enter y/n: ')
         while True:
             if newuser == "y":
@@ -1101,6 +1115,7 @@ class MPositioning(smach.State):
         self.robot_control = robot_control
         self.counter = 0
     def execute(self, userdata):
+        #plaziere Motor auf Grundplatte
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
         self.counter += 1
@@ -1109,7 +1124,7 @@ class MPositioning(smach.State):
             if newuser == "y":
                 if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
                     return 'aborted'
-                return 'succeeded_to_PCB'
+                return 'succeeded'
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_to_PCB'
@@ -1123,6 +1138,7 @@ class PCB1PickUpAndPositioning(smach.State):
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        #plaziere PCB1 auf Grundplatte
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
@@ -1144,11 +1160,10 @@ class PCB2PickUpAndPositioning(smach.State):
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        #plaziere PCB2 auf Grundplatte
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                # if not robot_control.move_to_joint_goal((-3.4437, -1.5349, -1.6576, -1.5354, 1.5145, -3.469),10):
-                #     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb2[self.counter]):
                     return 'aborted'
 
@@ -1167,11 +1182,10 @@ class BatteryPickUpAndPositioning(smach.State):
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        #plaziere Batterie auf Grundplatte
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                # if not robot_control.move_to_joint_goal((-2.8658, -1.9520, -1.1734, -1.6044, 1.5588, -4.4440),10):
-                #     return 'aborted' 
                 if not robot_control.pick_up(rb_arm_on_battery[self.counter]):
                     return 'aborted' 
                 if not robot_control.place_on_board(rb_arm_transition_over_gb2_2 , 10,0.2,70):
@@ -1188,6 +1202,7 @@ class Aborted(smach.State):
         smach.State.__init__(self, outcomes=['succeeded_end','succeeded','start'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        #Ruckfallstate für Fehler
         while True:
             newuser = input('neuer Versuch? y/n: ')
             if newuser == "y":
@@ -1200,6 +1215,7 @@ class Test(smach.State):
         smach.State.__init__(self, outcomes=['succeeded_end','aborted'])
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        ####### DEBUG STATE NICHT VERWENDEN #######
         while True:
             newuser = input('neuer Versuch? y/n: ')
             if newuser == "y":
@@ -1250,7 +1266,7 @@ if __name__ == "__main__":
 
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:
-        # Smachstates
+        # Smachstates und Smachverbindungen
         smach.StateMachine.add('Start', Start(),
                                transitions={'MPickUp':'MPickUp',
                                             'MHoldHD':'MHoldHD',

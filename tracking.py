@@ -24,54 +24,61 @@ rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*
 def calc_midPoint(x1,x2,y1,y2,z1,z2):  
   return ((x1 + x2)/2, (y1 + y2)/2,(z1+z2)/2)
 
-def get_box_corners(p1, p2):
-    x_vals = [p1[0], p2[0]]
-    y_vals = [p1[1], p2[1]]
-    z_vals = [p1[2], p2[2]]
+# def get_box_corners(p1, p2):
+#     x_vals = [p1[0], p2[0]]
+#     y_vals = [p1[1], p2[1]]
+#     z_vals = [p1[2], p2[2]]
 
-    corners = []
-    for x in x_vals:
-        for y in y_vals:
-            for z in z_vals:
-                corners.append(np.array([x, y, z]))
-    return corners
+#     corners = []
+#     for x in x_vals:
+#         for y in y_vals:
+#             for z in z_vals:
+#                 corners.append(np.array([x, y, z]))
+#     return corners
 
-def world_to_camera(pt, trans, rot_matrix):
-    # Invertierte Rotation & Translation
-    R_inv = np.linalg.inv(rot_matrix)
-    t = np.array(trans).reshape(3, 1)
-    cam_coords = R_inv @ (pt.reshape(3, 1) - t)
-    return cam_coords.flatten()
+# def world_to_camera(pt, trans, rot_matrix):
+#     # Invertierte Rotation & Translation
+#     R_inv = np.linalg.inv(rot_matrix)
+#     t = np.array(trans).reshape(3, 1)
+#     cam_coords = R_inv @ (pt.reshape(3, 1) - t)
+#     return cam_coords.flatten()
 
-def camera_to_pixel(pt_cam, fx, fy, cx, cy):
-    x, y, z = pt_cam
-    if z <= 0: return None  # hinter der Kamera
-    u = int((x / z) * fx + cx)
-    v = int((y / z) * fy + cy)
-    return (u, v)
+# def camera_to_pixel(pt_cam, fx, fy, cx, cy):
+#     x, y, z = pt_cam
+#     if z <= 0: return None  # hinter der Kamera
+#     u = int((x / z) * fx + cx)
+#     v = int((y / z) * fy + cy)
+#     return (u, v)
 
-def draw_box_on_image(image, pixel_pts):
-    box_lines = [
-        (0, 1), (0, 2), (0, 4),
-        (1, 3), (1, 5),
-        (2, 3), (2, 6),
-        (3, 7),
-        (4, 5), (4, 6),
-        (5, 7),
-        (6, 7)
-    ]
-    for i, j in box_lines:
-        if pixel_pts[i] and pixel_pts[j]:
-            cv2.line(image, pixel_pts[i], pixel_pts[j], (0, 255, 0), 2)
+# def draw_box_on_image(image, pixel_pts):
+#     box_lines = [
+#         (0, 1), (0, 2), (0, 4),
+#         (1, 3), (1, 5),
+#         (2, 3), (2, 6),
+#         (3, 7),
+#         (4, 5), (4, 6),
+#         (5, 7),
+#         (6, 7)
+#     ]
+#     for i, j in box_lines:
+#         if pixel_pts[i] and pixel_pts[j]:
+#             cv2.line(image, pixel_pts[i], pixel_pts[j], (0, 255, 0), 2)
 
 # Initialisierte Realsense Kamera
+target_serial = "831612072790"
 realsense_ctx = rs.context()
 connected_devices = [] 
 for i in range(len(realsense_ctx.devices)):
     detected_camera = realsense_ctx.devices[i].get_info(rs.camera_info.serial_number)
-    print(f"{detected_camera}")
+    print(f"Serial nummer: {detected_camera}")
     connected_devices.append(detected_camera)
-device = connected_devices[0]
+
+
+if target_serial not in connected_devices:
+    raise RuntimeError(f"Kamera mit Seriennummer {target_serial} nicht gefunden.")
+
+
+#device = connected_devices[0]
 pipeline = rs.pipeline()
 config = rs.config()
 
@@ -81,7 +88,7 @@ pose = mpPose.Pose()
 mpDraw = mp.solutions.drawing_utils
 
 
-config.enable_device(device)
+config.enable_device(target_serial)
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 profile = pipeline.start(config)
@@ -97,7 +104,7 @@ intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_i
 fx, fy = intrinsics.fx, intrinsics.fy  # Focal lengths
 cx, cy = intrinsics.ppx, intrinsics.ppy  # Principal point
 
-# Start the ROS loop
+# Starte ROS übertragung
 rate = rospy.Rate(30) 
 listener = tf.TransformListener()  
 
@@ -111,33 +118,32 @@ while not rospy.is_shutdown():
         continue
 
 
-    # Convert frames to numpy arrays
+    # Konvertiere in Arraays
     depth_image = np.asanyarray(aligned_depth_frame.get_data())
     #depth_image = cv2.flip(depth_image,-1)
     color_image = np.asanyarray(color_frame.get_data())
     #color_image = cv2.flip(color_image,-1)
 
-    # Sicherheitsecke in Welt-Koordinaten
-    safety_koord_1 = np.array([0.20, 0.6, 0.0])
-    safety_koord_2 = np.array([0.24, 0.04,0.7])
+    # # Sicherheitsecke in Welt-Koordinaten
+    # safety_koord_1 = np.array([0.20, 0.6, 0.0])
+    # safety_koord_2 = np.array([0.24, 0.04,0.7])
 
-    # Rotation aus Quaternion in Matrix umwandeln
-    rot_matrix = tf.transformations.quaternion_matrix(rotation)[:3, :3]
 
-    # 8 Ecken generieren
-    box_corners_world = get_box_corners(safety_koord_1, safety_koord_2)
+    # rot_matrix = tf.transformations.quaternion_matrix(rotation)[:3, :3]
 
-    # Umwandeln in Bildkoordinaten
-    box_pixel_points = []
-    for corner in box_corners_world:
-        corner_cam = world_to_camera(corner, translation, rot_matrix)
-        pixel = camera_to_pixel(corner_cam, fx, fy, cx, cy)
-        box_pixel_points.append(pixel)
+    # box_corners_world = get_box_corners(safety_koord_1, safety_koord_2)
 
-    # Zeichne den Kasten
-    draw_box_on_image(color_image, box_pixel_points)
-    
-    # Process Pose using MediaPipe
+
+    # box_pixel_points = []
+    # for corner in box_corners_world:
+    #     corner_cam = world_to_camera(corner, translation, rot_matrix)
+    #     pixel = camera_to_pixel(corner_cam, fx, fy, cx, cy)
+    #     box_pixel_points.append(pixel)
+
+
+    # draw_box_on_image(color_image, box_pixel_points)
+
+    # Pose und Mediapipe iniitieren
     color_image_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
     results = pose.process(color_image_rgb)
 
@@ -245,6 +251,8 @@ while not rospy.is_shutdown():
         #shoulder_trans_kf = kf_shoulder.update([x_world_right_shoulder,y_world_right_shoulder,z_right_shoulder])
         #elbow_trans = kf_elbow.update([x_world_right_elbow,y_world_right_elbow,z_right_elbow])
         #hand_trans = kf_hand.update([x_world_right_hand,y_world_right_hand,z_right_hand])
+
+
         left_shoulder_trans =   [x_world_left_shoulder,y_world_left_shoulder,z_left_shoulder]
         left_elbow_trans =      [x_world_left_elbow,y_world_left_elbow,z_left_elbow]
         left_hand_trans =       [x_world_left_hand,y_world_left_hand,z_left_hand]
@@ -257,6 +265,7 @@ while not rospy.is_shutdown():
         elbow_trans =       calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
         hand_trans =        calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
         rospy.logwarn(f"mittelpunkt: {shoulder_trans[0]}")
+
         #Erstelle punkte für den Publisher
         shoulder_point = PointStamped()
         shoulder_point.header.frame_id = "camera_link"
@@ -324,16 +333,16 @@ while not rospy.is_shutdown():
         right_hand_point.point.y = right_hand_trans[2]
         right_hand_point.point.z = right_hand_trans[1]
 
-        # Veröffentliche den Frame "camera_link" im TF-Baum
+        # Veröffentliche den Frame "camera_link" in TF
         broadcaster.sendTransform(
             translation,  
             rotation,    
             rospy.Time.now(), 
-            "camera_link",  # Child Frame (Kamera)
-            "base"         # Parent Frame (Weltkoordinatensystem)
+            "camera_link",  # Child Frame
+            "base"         # Parent Frame 
         )
 
-        # Warte auf die TF-Daten
+        # Warten auf TF
         try:
             # Warte auf die Transformation
             listener.waitForTransform("base", "camera_link", shoulder_point.header.stamp, rospy.Duration(1.0))
@@ -347,7 +356,7 @@ while not rospy.is_shutdown():
                 "base"
             )
 
-            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            # Warte auf die Transformation mit Zeitstempel
             listener.waitForTransform("base", "camera_link", elbow_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", elbow_point)
 
@@ -382,7 +391,7 @@ while not rospy.is_shutdown():
                 "base"
             )
 
-            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            # Warte auf die Transformation mit Zeitstempel
             listener.waitForTransform("base", "camera_link", right_elbow_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", right_elbow_point)
 
@@ -417,7 +426,7 @@ while not rospy.is_shutdown():
                 "base"
             )
 
-            # Warte auf die Transformation mit dem richtigen Zeitstempel
+            # Warte auf die Transformation mit Zeitstempel
             listener.waitForTransform("base", "camera_link", left_elbow_point.header.stamp, rospy.Duration(1.0))
             transformed_point = listener.transformPoint("base", left_elbow_point)
 
@@ -452,42 +461,3 @@ while not rospy.is_shutdown():
 
 pipeline.stop()
 
-def get_box_corners(p1, p2):
-    x_vals = [p1[0], p2[0]]
-    y_vals = [p1[1], p2[1]]
-    z_vals = [p1[2], p2[2]]
-
-    corners = []
-    for x in x_vals:
-        for y in y_vals:
-            for z in z_vals:
-                corners.append(np.array([x, y, z]))
-    return corners
-
-def world_to_camera(pt, trans, rot_matrix):
-    # Invertierte Rotation & Translation
-    R_inv = np.linalg.inv(rot_matrix)
-    t = np.array(trans).reshape(3, 1)
-    cam_coords = R_inv @ (pt.reshape(3, 1) - t)
-    return cam_coords.flatten()
-
-def camera_to_pixel(pt_cam, fx, fy, cx, cy):
-    x, y, z = pt_cam
-    if z <= 0: return None  # hinter der Kamera
-    u = int((x / z) * fx + cx)
-    v = int((y / z) * fy + cy)
-    return (u, v)
-
-def draw_box_on_image(image, pixel_pts):
-    box_lines = [
-        (0, 1), (0, 2), (0, 4),
-        (1, 3), (1, 5),
-        (2, 3), (2, 6),
-        (3, 7),
-        (4, 5), (4, 6),
-        (5, 7),
-        (6, 7)
-    ]
-    for i, j in box_lines:
-        if pixel_pts[i] and pixel_pts[j]:
-            cv2.line(image, pixel_pts[i], pixel_pts[j], (0, 255, 0), 2)

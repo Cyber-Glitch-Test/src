@@ -12,7 +12,7 @@ import copy
 import time
 import csv
 import threading
-from schledluer.msg import robot_msgs
+from schledluer.msg import robot_msgs # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
 from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
 from moveit_msgs.msg import Grasp, PlaceLocation # type: ignore
@@ -68,19 +68,20 @@ rb_arm_transition_over_gb1_2 =  np.array([0.4907380230958256, -0.459838479954196
 rb_arm_transition_over_gb1_3 =  np.array([0.4907380230958256, -0.45983847995419647, 0.35395950043452323 ,0.003330260900274425, 0.9999775446059118, -0.0015901397197829994, 0.0055938450049654006])
 
 rb_arm_transition_over_gb2_1 =  np.array([0.5486854170473805, -0.3885145028949433, 0.3814376455406984 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
-rb_arm_transition_over_gb2_2 =  np.array([0.5486854170473805, -0.4685145028949433, 0.3514376455406984 ,-0.0019061535444672643, 0.9999968279727596, 0.0016234889408431768, 0.00027369096276817686])
+rb_arm_transition_over_gb2_2 =  np.array([0.5541683902247382, -0.4608776309406269, 0.3516115882341859,-0.0019221405935429784, 0.9999968121680831, 0.0016100890850873695, 0.0002977286491069227])
+
 rb_arm_transition_over_gb2_3 =  np.array([0.5486854170473805, -0.27057393609447655, 0.35141967557281056 ,-0.0020243784347149197, 0.9996642271967776, 0.02193613735553668, 0.013643336576571479])
 
 rb_arm_transition_over_gb3_1 =  np.array([0.6402808547359244, -0.26790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
 rb_arm_transition_over_gb3_2 =  np.array([0.6402808547359244, -0.46790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
-rb_arm_transition_over_gb3_3 =  np.array([0.6402808547359244, -0.46790083190492066, 0.35478830422197494 ,0.010290457772605947, 0.9997533010888775, -0.005696452057469483, 0.018841281131592193])
+rb_arm_transition_over_gb3_3 =  np.array([0.6395384342520363, -0.469121998164546, 0.34939538969817263, 0.010291666360366757, 0.9997544304898899, -0.005685602308402095, 0.01878388260594522])
 
-rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
-                    np.array([0.6866488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
-                    np.array([0.7416488317010515, -0.13953502575569454, 0.16890158973568933  ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108]),
-                    np.array([0.7966488317010515, -0.13953502575569454, 0.16890158973568933 ,0.703591897260684, 0.7105805074782172, 0.0027980514341484353, 0.005094645157629108])]
+rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.16890158973568933 ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
+                    np.array([0.6866488317010515, -0.13953502575569454, 0.16890158973568933  ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
+                    np.array([0.7416488317010515, -0.13953502575569454, 0.16890158973568933  ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
+                    np.array([0.7966488317010515, -0.13953502575569454, 0.16890158973568933 ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0])]
 
-rb_arm_on_pcb2  =  [np.array([0.40558901752394194, -0.26155397106696143, 0.15286739666265525   ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
+rb_arm_on_pcb2  =  [np.array([0.40558901752394194, -0.26155397106696143,  0.15524703844596804  ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
                     np.array([]),
                     np.array([]),
                     np.array([])]
@@ -103,12 +104,12 @@ upperarmlenghtdin_min = 0.285 #
 
 tcp_coversion = 0.2
 
-savety_koord_1 = np.array([ 0.20,  0.0, 0.6])
+savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 user = ""
 
-use_built_in_rb_control = True
+use_built_in_rb_control = False
 
 
 # cmd_nr = 0
@@ -712,10 +713,12 @@ class RobotControl:
         if not self.move_to_target_carth_plan(plan2,speed):
             return False
         
+        if not self.gripper_controller.send_gripper_command('open'):
+            return False
+        
         return True
 
 #======Gripper Control======
-
 
 class GripperController:
     def __init__(self):
@@ -1016,8 +1019,8 @@ class MPickUp(smach.State):
         ### Kommentieren für testen
         # if not robot_control.gripper_controller.send_gripper_command('reset'):
         #    return 'aborted'
-        if not robot_control.gripper_controller.send_gripper_command('activate'):
-           return 'aborted'
+        # if not robot_control.gripper_controller.send_gripper_command('activate'):
+        #    return 'aborted'
         #return 'succeeded_with_HD'
 
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -1104,7 +1107,7 @@ class MPositioning(smach.State):
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
             if newuser == "y":
-                if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.05):
+                if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
                     return 'aborted'
                 return 'succeeded_to_PCB'
             elif newuser == "n":
@@ -1123,11 +1126,11 @@ class PCB1PickUpAndPositioning(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-                # if not robot_control.move_to_joint_goal((-3.1685, -2.1329, -1.1121, -1.4531, 1.5636, -3.1929),10):
-                #     return 'aborted'
+                if not robot_control.move_to_joint_goal((-3.1850, -1.9856, -1.4840, -1.2426, 1.5657, -3.1280),20):
+                    return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_pcb1[self.counter]):
                     return 'aborted'
-                if not robot_control.place_on_board(rb_arm_transition_over_gb1_3,10):
+                if not robot_control.place_on_board(rb_arm_transition_over_gb1_3,10,0.2,130):
                     return 'aborted'
                 self.counter +=1
                 return 'succeeded'
@@ -1241,7 +1244,7 @@ if __name__ == "__main__":
 
     rospy.init_node('ur5_moveit_control', anonymous=True)
     moveit_commander.roscpp_initialize(sys.argv)
-    # robot_control.gripper_controller.send_gripper_command('reset')
+    robot_control.gripper_controller.send_gripper_command('reset')
     robot_control.gripper_controller.send_gripper_command('activate')
     # robot_control.gripper_controller.send_gripper_command('open')
 

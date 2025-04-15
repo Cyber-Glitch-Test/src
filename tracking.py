@@ -9,7 +9,7 @@ import numpy as np  # type: ignore
 import math
 from geometry_msgs.msg import PointStamped  # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
-from filterpy.kalman import KalmanFilter  # type: ignore
+#from filterpy.kalman import KalmanFilter  # type: ignore
 from std_srvs.srv import Empty  # type: ignore
 
 
@@ -24,6 +24,45 @@ rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*
 def calc_midPoint(x1,x2,y1,y2,z1,z2):  
   return ((x1 + x2)/2, (y1 + y2)/2,(z1+z2)/2)
 
+def get_box_corners(p1, p2):
+    x_vals = [p1[0], p2[0]]
+    y_vals = [p1[1], p2[1]]
+    z_vals = [p1[2], p2[2]]
+
+    corners = []
+    for x in x_vals:
+        for y in y_vals:
+            for z in z_vals:
+                corners.append(np.array([x, y, z]))
+    return corners
+
+def world_to_camera(pt, trans, rot_matrix):
+    # Invertierte Rotation & Translation
+    R_inv = np.linalg.inv(rot_matrix)
+    t = np.array(trans).reshape(3, 1)
+    cam_coords = R_inv @ (pt.reshape(3, 1) - t)
+    return cam_coords.flatten()
+
+def camera_to_pixel(pt_cam, fx, fy, cx, cy):
+    x, y, z = pt_cam
+    if z <= 0: return None  # hinter der Kamera
+    u = int((x / z) * fx + cx)
+    v = int((y / z) * fy + cy)
+    return (u, v)
+
+def draw_box_on_image(image, pixel_pts):
+    box_lines = [
+        (0, 1), (0, 2), (0, 4),
+        (1, 3), (1, 5),
+        (2, 3), (2, 6),
+        (3, 7),
+        (4, 5), (4, 6),
+        (5, 7),
+        (6, 7)
+    ]
+    for i, j in box_lines:
+        if pixel_pts[i] and pixel_pts[j]:
+            cv2.line(image, pixel_pts[i], pixel_pts[j], (0, 255, 0), 2)
 
 # Initialisierte Realsense Kamera
 realsense_ctx = rs.context()
@@ -71,12 +110,33 @@ while not rospy.is_shutdown():
     if not aligned_depth_frame or not color_frame:
         continue
 
+
     # Convert frames to numpy arrays
     depth_image = np.asanyarray(aligned_depth_frame.get_data())
     #depth_image = cv2.flip(depth_image,-1)
     color_image = np.asanyarray(color_frame.get_data())
     #color_image = cv2.flip(color_image,-1)
 
+    # Sicherheitsecke in Welt-Koordinaten
+    safety_koord_1 = np.array([0.20, 0.6, 0.0])
+    safety_koord_2 = np.array([0.24, 0.04,0.7])
+
+    # Rotation aus Quaternion in Matrix umwandeln
+    rot_matrix = tf.transformations.quaternion_matrix(rotation)[:3, :3]
+
+    # 8 Ecken generieren
+    box_corners_world = get_box_corners(safety_koord_1, safety_koord_2)
+
+    # Umwandeln in Bildkoordinaten
+    box_pixel_points = []
+    for corner in box_corners_world:
+        corner_cam = world_to_camera(corner, translation, rot_matrix)
+        pixel = camera_to_pixel(corner_cam, fx, fy, cx, cy)
+        box_pixel_points.append(pixel)
+
+    # Zeichne den Kasten
+    draw_box_on_image(color_image, box_pixel_points)
+    
     # Process Pose using MediaPipe
     color_image_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
     results = pose.process(color_image_rgb)
@@ -149,7 +209,7 @@ while not rospy.is_shutdown():
         left_elbow_distance = depth_image[y_left_elbow, x_left_elbow] * depth_scale
         z_left_elbow = left_elbow_distance
         x_world_left_elbow = (x_left_elbow - cx) * z_left_elbow / fx
-        x_world_left_elbow = 1.25 * x_world_left_elbow
+        x_world_left_elbow = 0.78 * x_world_left_elbow
         y_world_left_elbow = (y_left_elbow - cy) * z_left_elbow / fy
 
         # Linke Hand
@@ -383,33 +443,43 @@ while not rospy.is_shutdown():
         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logwarn(f"Error transforming point: {e}")
     
-    #Box projeziern in der die übergabe statfindet
-
-    x1, y1, z1 = np.array([ 0.20,  0.0, 0.6])
-    x2, y2, z2 = np.array([-0.24, -0.7, 0.04])
-
-    box_points_3d = [
-        [x1, y1, z1],
-        [x1, y1, z2],
-        [x1, y2, z1],
-        [x1, y2, z2],
-        [x2, y1, z1],
-        [x2, y1, z2],
-        [x2, y2, z1],
-        [x2, y2, z2]
-    ]
 
 
-    box_points_2d = []
-    for point in box_points_3d:
-        x, y, z = point
-        if z == 0: z = 0.0001 
-        u = int((x * fx) / z + cx)
-        v = int((y * fy) / z + cy)
-        box_points_2d.append((u, v))
+    cv2.imshow("Pose Landmarks", cv2.flip(color_image,-1))
+    cv2.waitKey(1)
 
+    rate.sleep()
 
-    edges = [
+pipeline.stop()
+
+def get_box_corners(p1, p2):
+    x_vals = [p1[0], p2[0]]
+    y_vals = [p1[1], p2[1]]
+    z_vals = [p1[2], p2[2]]
+
+    corners = []
+    for x in x_vals:
+        for y in y_vals:
+            for z in z_vals:
+                corners.append(np.array([x, y, z]))
+    return corners
+
+def world_to_camera(pt, trans, rot_matrix):
+    # Invertierte Rotation & Translation
+    R_inv = np.linalg.inv(rot_matrix)
+    t = np.array(trans).reshape(3, 1)
+    cam_coords = R_inv @ (pt.reshape(3, 1) - t)
+    return cam_coords.flatten()
+
+def camera_to_pixel(pt_cam, fx, fy, cx, cy):
+    x, y, z = pt_cam
+    if z <= 0: return None  # hinter der Kamera
+    u = int((x / z) * fx + cx)
+    v = int((y / z) * fy + cy)
+    return (u, v)
+
+def draw_box_on_image(image, pixel_pts):
+    box_lines = [
         (0, 1), (0, 2), (0, 4),
         (1, 3), (1, 5),
         (2, 3), (2, 6),
@@ -418,16 +488,6 @@ while not rospy.is_shutdown():
         (5, 7),
         (6, 7)
     ]
-
-
-    for start, end in edges:
-        pt1 = box_points_2d[start]
-        pt2 = box_points_2d[end]
-        cv2.line(color_image, pt1, pt2, (0, 0, 255), 2)
-
-    cv2.imshow("Pose Landmarks", cv2.flip(color_image,-1))
-    cv2.waitKey(1)
-
-    rate.sleep()
-
-pipeline.stop()
+    for i, j in box_lines:
+        if pixel_pts[i] and pixel_pts[j]:
+            cv2.line(image, pixel_pts[i], pixel_pts[j], (0, 255, 0), 2)

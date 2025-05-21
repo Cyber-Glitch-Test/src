@@ -1014,7 +1014,10 @@ class MPickUp(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','aborted'])
         #self.robot_control = robot_control
-        self.counter = 0
+        if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
+                    return 'aborted'
+        self.counter = 3
+
     def execute(self, userdata):
         #nehme Motor auf
         ### Kommentieren für testen
@@ -1030,8 +1033,8 @@ class MPickUp(smach.State):
             newuser = input('enter y/n: ')
             if newuser == "y":
 
-                if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
-                    return 'aborted'
+                # if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
+                #     return 'aborted'
                 # if not robot_control.gripper_controller.send_gripper_command('close'):
                 #     return 'aborted'
                 # if not robot_control.gripper_controller.send_gripper_command('open'):
@@ -1113,12 +1116,12 @@ class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB','aborted'])
         self.robot_control = robot_control
-        self.counter = 0
+        self.counter = 3
     def execute(self, userdata):
         #plaziere Motor auf Grundplatte
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
-        self.counter += 1
+        #self.counter += 1
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
             if newuser == "y":
@@ -1128,7 +1131,7 @@ class MPositioning(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_to_PCB'
-
+            self.counter += 1
         else:
             return 'succeeded_to_PCB'
 

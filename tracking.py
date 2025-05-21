@@ -101,8 +101,8 @@ depth_scale = depth_sensor.get_depth_scale()
 
 # Kamera Intrinsics
 intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
-fx, fy = intrinsics.fx, intrinsics.fy  # Focal lengths
-cx, cy = intrinsics.ppx, intrinsics.ppy  # Principal point
+fx, fy = intrinsics.fx, intrinsics.fy  
+cx, cy = intrinsics.ppx, intrinsics.ppy  
 
 # Starte ROS übertragung
 rate = rospy.Rate(30) 

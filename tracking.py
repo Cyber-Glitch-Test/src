@@ -17,8 +17,8 @@ from std_srvs.srv import Empty  # type: ignore
 rospy.init_node('Stereo_Cam')
 
 broadcaster = tf.TransformBroadcaster()
-translation = (0.0894, -0.28, 0.80)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
-rotation = quaternion_from_euler(((-22/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
+translation = (0.0894, -0.21, 0.73)   # Position der Kamera im Weltkoordinatensystem X/Y/Z
+rotation = quaternion_from_euler(((-24/180)*math.pi),((0/180)*math.pi),((0/180)*math.pi)) # Orientierung der Kamera im Weltkoordinatensystem Roll/Pitch/Yaw
 #rotation = quaternion_from_euler(-math.pi, ((17*math.pi)/180), math.pi) 
 
 def calc_midPoint(x1,x2,y1,y2,z1,z2):  
@@ -101,8 +101,8 @@ depth_scale = depth_sensor.get_depth_scale()
 
 # Kamera Intrinsics
 intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
-fx, fy = intrinsics.fx, intrinsics.fy  
-cx, cy = intrinsics.ppx, intrinsics.ppy  
+fx, fy = intrinsics.fx, intrinsics.fy  # Focal lengths
+cx, cy = intrinsics.ppx, intrinsics.ppy  # Principal point
 
 # Starte ROS übertragung
 rate = rospy.Rate(30) 
@@ -261,10 +261,35 @@ while not rospy.is_shutdown():
         right_elbow_trans =     [x_world_right_elbow,y_world_right_elbow,z_right_elbow]
         right_hand_trans =      [x_world_right_hand,y_world_right_hand,z_right_hand]
 
+        last_working_trans_right_shoulder   = right_shoulder_trans
+        last_working_trans_right_elbow      = right_elbow_trans
+        last_working_trans_right_hand       = right_hand_trans
+
+        last_working_trans_left_shoulder    = left_shoulder_trans
+        last_working_trans_left_elbow       = left_elbow_trans
+        last_working_trans_left_hand        = left_hand_trans
+
+    # except:
+        
+    #     right_shoulder_trans = last_working_trans_right_shoulder 
+    #     right_elbow_trans = last_working_trans_right_elbow 
+    #     right_hand_trans = last_working_trans_right_hand 
+
+    #     left_shoulder_trans = last_working_trans_left_shoulder 
+    #     left_elbow_trans = last_working_trans_left_elbow 
+    #     left_hand_trans = last_working_trans_left_hand 
+
+    # finally:
+
+
+
         shoulder_trans =    calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
         elbow_trans =       calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
         hand_trans =        calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
         rospy.logwarn(f"mittelpunkt: {shoulder_trans[0]}")
+
+        last_working_trans = shoulder_trans
+
 
         #Erstelle punkte für den Publisher
         shoulder_point = PointStamped()

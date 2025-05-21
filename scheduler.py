@@ -102,7 +102,7 @@ forearmlenghdin_min = 0.187 #
 upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #
 
-tcp_coversion = 0.2
+tcp_coversion = 0.15
 
 savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
@@ -110,6 +110,7 @@ savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 user = ""
 
 use_built_in_rb_control = True
+
 
 
 #======Robot Control Class======
@@ -205,6 +206,7 @@ class RobotControl:
             if (user == ""):
                 self.user = "test"
                 print(f"user: {user}")
+
             break
         
     def convert_to_pose(self, koords):
@@ -396,7 +398,7 @@ class RobotControl:
         for i in range(1):
             for sek in range(10):
                 broadcaster = tf.TransformBroadcaster()
-                listener = tf.TransformListener()  
+                #listener = tf.TransformListener()  
                 hm = get_Hum_mertics()
                 hm.camera_listener()
                 hm.calc_arm_lenght()
@@ -800,7 +802,7 @@ class get_Hum_mertics:
         try:
 
             time = rospy.Time(0)
-            listener = tf.TransformListener()
+            #listener = tf.TransformListener()
 
             listener.waitForTransform("base", "shoulder", time, rospy.Duration(4.0))
             listener.waitForTransform("base", "elbow",    time, rospy.Duration(4.0))
@@ -822,7 +824,7 @@ class get_Hum_mertics:
         try:
             self.camera_listener()
             time = rospy.Time(0)
-            listener = tf.TransformListener()
+            #listener = tf.TransformListener()
 
             listener.waitForTransform("base", "right_shoulder", time, rospy.Duration(1.0))
             listener.waitForTransform("base", "right_elbow",    time, rospy.Duration(1.0))
@@ -1016,7 +1018,7 @@ class MPickUp(smach.State):
         #self.robot_control = robot_control
         if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
                     return 'aborted'
-        self.counter = 3
+        self.counter = 0
 
     def execute(self, userdata):
         #nehme Motor auf
@@ -1039,10 +1041,10 @@ class MPickUp(smach.State):
                 #     return 'aborted'
                 # if not robot_control.gripper_controller.send_gripper_command('open'):
                 #     return 'aborted'
-                # plan = []
-                # plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
-                # if not robot_control.move_to_taget_plan(plan,10):
-                #     return 'aborted'
+                plan = []
+                plan.append(robot_control.convert_to_pose(rb_arm_transition_over_m))
+                if not robot_control.move_to_taget_plan(plan,20):
+                     return 'aborted'
                 if not robot_control.pick_up(rb_arm_on_m[self.counter],20):
                     return 'aborted'
                 if not robot_control.move_to_joint_goal( (-3.8497, -1.0055, -2.3556, -2.8687, -0.7227, -1.6213), 20):
@@ -1266,7 +1268,7 @@ if __name__ == "__main__":
     robot_control.gripper_controller.send_gripper_command('reset')
     robot_control.gripper_controller.send_gripper_command('activate')
     # robot_control.gripper_controller.send_gripper_command('open')
-
+    listener = tf.TransformListener()
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:
         # Smachstates und Smachverbindungen

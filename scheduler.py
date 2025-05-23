@@ -107,7 +107,7 @@ tcp_coversion = 0.15
 savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
-user = ""
+
 
 use_built_in_rb_control = True
 
@@ -202,9 +202,9 @@ class RobotControl:
 
 
         while True:
-            self.user = input('Gebe initialen ein: ')
+            user = input('Gebe initialen ein: ')
             if (user == ""):
-                self.user = "test"
+                user = "test"
                 print(f"user: {user}")
 
             break
@@ -269,6 +269,8 @@ class RobotControl:
         waypoints.append(target_pose)
         self.move_group.set_planning_time(10.0) 
         (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.05) 
+        if fraction < 1.0:
+            return False
         rospy.loginfo("Bewege Roboter in einer Linie zu: x={}, y={}, z={}".format(target_pose.position.x, target_pose.position.y, target_pose.position.z))
 
         success = self.move_group.execute(plan, wait=True)
@@ -861,10 +863,10 @@ class get_Hum_mertics:
         self.forearmlenght = self.calc_euclidean_distance(self.lefthandkoords,      self.leftelbowkoords)
         self.is_inside_norm()
 
-        with open('armlaengen.csv', 'a', newline='') as f:
+        with open(f'armlaengen{user}.csv', 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([f'{robot_control.user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
-            writer.writerow([f'{robot_control.user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
+            writer.writerow([f'{user}{rospy.Time.now()} oberarmlänge: {self.uperarmlenght}'])
+            writer.writerow([f'{user}{rospy.Time.now()} unterarmlänge:{self.uperarmlenght}'])
 
     def calc_euclidean_distance(self, point1, point2):
     #bestimme den euclidischen Abstand zwischen zwei Punkten
@@ -919,10 +921,10 @@ class get_Hum_mertics:
 
 
             print(f'rechts: {right_angle} links: {left_angle}', end='\r') 
-            with open('armlaengen.csv','a', newline='') as f:
+            with open(f'armlaengen{user}.csv','a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([f'{robot_control.user } {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
-                writer.writerow([f'{robot_control.user} {rospy.Time.now()} elbogenwinkel links:  {left_angle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel rechts: {right_angle}'])
+                writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel links:  {left_angle}'])
             #return elbowangle
 
 robot_control = RobotControl("manipulator")
@@ -934,7 +936,7 @@ class Start(smach.State):
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
         #Hauptmenuü
-        if( robot_control.user ==  "test" ):
+        if( user ==  "test" ):
 
             print("\n--- Hauptmenü ---")
             print("1. MPickUp")
@@ -1269,6 +1271,7 @@ if __name__ == "__main__":
     robot_control.gripper_controller.send_gripper_command('activate')
     # robot_control.gripper_controller.send_gripper_command('open')
     listener = tf.TransformListener()
+    user = ""
     sm = smach.StateMachine(outcomes=['finished'])
     with sm:
         # Smachstates und Smachverbindungen

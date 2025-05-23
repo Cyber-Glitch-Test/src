@@ -202,7 +202,8 @@ class RobotControl:
 
 
         while True:
-            user = input('Gebe initialen ein: ')
+            user_input = input('Gebe initialen ein: ')
+            user = user_input
             if (user == ""):
                 user = "test"
                 print(f"user: {user}")

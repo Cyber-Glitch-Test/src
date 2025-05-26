@@ -12,6 +12,7 @@ import copy
 import time
 import csv
 import threading
+import random
 from schledluer.msg import robot_msgs # type: ignore
 from tf.transformations import quaternion_from_euler  # type: ignore
 from geometry_msgs.msg import Pose, PoseStamped , PointStamped # type: ignore
@@ -58,6 +59,7 @@ rb_arm_transition_over_m =      np.array([0.32755193192480295, 0,               
 rb_arm_transition_over_pcb1 =   np.array([0.7371109279194257, -0.12405534656551466, 0.3564804416147143 ,0.701903624069778, 0.7119699919919052, 0.017634125210474614, 0.010911949817505392])
 rb_arm_transition_over_pcb2 =   np.array([0.39299783753064255, -0.25037007326362604, 0.4098002793824048  ,0.9994996999243878, 0.018132610811126923, -0.01488422170868633, 0.021213632889197198])
 
+
 rb_arm_transition_over_gb0_1 =  np.array([0.43920883565114404, -0.27118297223348553, 0.21533919567733978,-0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 rb_arm_transition_over_gb0_2 =  np.array([0.4017174799606998, -0.2181725740604259, 0.2921709170604791, -0.0017450344372635439, -0.6960370290652399, 0.7180016795804389, 0.0017312263041814983])
 
@@ -76,12 +78,19 @@ rb_arm_transition_over_gb3_1 =  np.array([0.6402808547359244, -0.267900831904920
 rb_arm_transition_over_gb3_2 =  np.array([0.6402808547359244, -0.46790083190492066, 0.38354439061807685 ,0.019159378644141387, 0.999622466840548, -0.005839393784188026, 0.018808069486830555])
 rb_arm_transition_over_gb3_3 =  np.array([0.6395384342520363, -0.469121998164546, 0.34939538969817263, 0.010291666360366757, 0.9997544304898899, -0.005685602308402095, 0.01878388260594522])
 
+rb_arm_transition_over_gb4_3 =  np.array([])
+
 rb_arm_on_pcb1  =  [np.array([0.6316488317010515, -0.13953502575569454, 0.16890158973568933 ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
                     np.array([0.6866488317010515, -0.13953502575569454, 0.16890158973568933  ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
                     np.array([0.7416488317010515, -0.13953502575569454, 0.16890158973568933  ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0]),
                     np.array([0.7966488317010515, -0.13953502575569454, 0.16890158973568933 ,-0.7289965096816865, -0.6845173343498824, 0.00032839232615476167, 0])]
 
 rb_arm_on_pcb2  =  [np.array([0.40558901752394194, -0.26155397106696143,  0.15524703844596804  ,0.7090144359375834, 0.7047068297621026, 0.006839549337615578, 0.02529889886172804]),
+                    np.array([]),
+                    np.array([]),
+                    np.array([])]
+
+rb_arm_on_pcb3  =  [np.array([]),
                     np.array([]),
                     np.array([]),
                     np.array([])]
@@ -1182,7 +1191,32 @@ class PCB2PickUpAndPositioning(smach.State):
                 return 'succeeded'
             elif newuser == "n":
                 print("Exiting")
-                return 'succeeded' 
+                return 'succeeded'
+class PCB3PickUpAndPositioning(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded','aborted'])
+        self.counter = 0
+    def execute(self, userdata):
+        rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
+        #plaziere PCB2 auf Grundplatte
+        if random.random() <= 1/3:  # 1/3 Wahrscheinlichkeit
+            while True:
+                newuser = input('enter y/n: ')
+                if newuser == "y":
+                    
+                    if not robot_control.pick_up(rb_arm_on_pcb3[self.counter]):
+                        return 'aborted'
+
+                    if not robot_control.place_on_board(rb_arm_transition_over_gb4_3,10):
+                        return 'aborted'
+                
+                    self.counter +=1
+                    return 'succeeded'
+                elif newuser == "n":
+                    print("Exiting")
+                    return 'succeeded'
+        else:
+            return 'succeeded'
 
 class BatteryPickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1304,6 +1338,9 @@ if __name__ == "__main__":
                                transitions={'succeeded':'PCB2PickUpAndPositioning',
                                             'aborted':'Aborted'})
         smach.StateMachine.add('PCB2PickUpAndPositioning', PCB2PickUpAndPositioning(),
+                               transitions={'succeeded':'PCB3PickUpAndPositioning',
+                                            'aborted':'Aborted'})
+        smach.StateMachine.add('PCB3PickUpAndPositioning', PCB3PickUpAndPositioning(),
                                transitions={'succeeded':'BatteryPickUpAndPositioning',
                                             'aborted':'Aborted'})
         smach.StateMachine.add('BatteryPickUpAndPositioning', BatteryPickUpAndPositioning(),

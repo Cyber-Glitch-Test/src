@@ -2,15 +2,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the data
-csv_file = 'armlaengen.csv'
-data = pd.read_csv(csv_file)
+csv_file = 'armlaengen_luka.csv'
+data = pd.read_csv(csv_file, header=None, names=['RawData'])
 
-# Debug: Check what columns are available
-print("Available columns:", data.columns.tolist())
+# Debug: Check the raw data
+print("Raw data preview:")
+print(data.head())
 
-# Extract time, type, and value from the first column
-data[['Time', 'Elbogenwinkel Type', 'Value']] = data.iloc[:, 0].str.extract(
-    r'test (\d+) elbogenwinkel (links|rechts):\s*([\d\.]+|nan)'
+# Extract time, type, and value from the raw data
+data[['Time', 'Elbogenwinkel Type', 'Value']] = data['RawData'].str.extract(
+    r'(\d+)\s+elbogenwinkel\s+(links|rechts):\s*([\d\.]+)'
 )
 
 # Convert to numeric

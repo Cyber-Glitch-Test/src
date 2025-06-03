@@ -1130,7 +1130,8 @@ class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB','aborted'])
         self.robot_control = robot_control
-        self.counter = 3
+        self.counter = 1
+
     def execute(self, userdata):
         #plaziere Motor auf Grundplatte
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
@@ -1138,6 +1139,7 @@ class MPositioning(smach.State):
         #self.counter += 1
         if not (self.counter % 4==0):
             newuser = input('enter y/n: ')
+            self.counter += 1
             if newuser == "y":
                 if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
                     return 'aborted'
@@ -1145,7 +1147,6 @@ class MPositioning(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_to_PCB'
-            self.counter += 1
         else:
             return 'succeeded_to_PCB'
 
@@ -1192,14 +1193,19 @@ class PCB2PickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("Exiting")
                 return 'succeeded'
+            
 class PCB3PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','aborted'])
         self.counter = 0
     def execute(self, userdata):
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
-        #plaziere PCB2 auf Grundplatte
+        #plaziere PCB3 auf Grundplatte
+
+        
+
         if random.random() <= 1/3:  # 1/3 Wahrscheinlichkeit
+
             while True:
                 newuser = input('enter y/n: ')
                 if newuser == "y":

@@ -111,7 +111,7 @@ forearmlenghdin_min = 0.187 #
 upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #
 
-tcp_coversion = 0.15
+tcp_coversion = 0.25
 
 savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])
@@ -781,7 +781,7 @@ class GripperController:
             self.command.rACT = 1
             self.command.rGTO = 1
             self.command.rSP = 255
-            self.command.rFR = 150
+            self.command.rFR = 100
         elif action_type == 'reset':
             self.command.rACT = 0
         elif isinstance(action_type, int):
@@ -1133,24 +1133,25 @@ class MPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','succeeded_to_PCB','aborted'])
         self.robot_control = robot_control
-        self.counter = 1
+        self.counter = 0
 
     def execute(self, userdata):
         #plaziere Motor auf Grundplatte
         rospy.loginfo(f"Führe state: {self.__class__.__name__} aus.")
 
         #self.counter += 1
-        if not (self.counter % 4==0):
-            newuser = input('enter y/n: ')
+        
+        newuser = input('enter y/n: ')
+        if newuser == "y":
+            if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
+                return 'aborted'
             self.counter += 1
-            if newuser == "y":
-                if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
-                    return 'aborted'
+            if not (self.counter % 4==0):
                 return 'succeeded'
-            elif newuser == "n":
-                rospy.loginfo('weiter')
+            else:
                 return 'succeeded_to_PCB'
-        else:
+        elif newuser == "n":
+            rospy.loginfo('weiter')
             return 'succeeded_to_PCB'
 
 class PCB1PickUpAndPositioning(smach.State):

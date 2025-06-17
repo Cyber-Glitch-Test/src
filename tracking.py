@@ -286,7 +286,7 @@ while not rospy.is_shutdown():
         shoulder_trans =    calc_midPoint(x_world_right_shoulder,x_world_left_shoulder,y_world_right_shoulder,y_world_left_shoulder,z_right_shoulder,z_left_shoulder)
         elbow_trans =       calc_midPoint(x_world_right_elbow,x_world_left_elbow,y_world_right_elbow,y_world_left_elbow,z_right_elbow,z_left_elbow)
         hand_trans =        calc_midPoint(x_world_right_hand,x_world_left_hand,y_world_right_hand,y_world_left_hand,z_right_hand,z_left_hand)
-        rospy.logwarn(f"mittelpunkt: {shoulder_trans[0]}")
+        #rospy.logwarn(f"mittelpunkt: {shoulder_trans[0]}")
 
         last_working_trans = shoulder_trans
 

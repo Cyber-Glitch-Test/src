@@ -27,7 +27,7 @@ source /opt/ros/noetic/setup.bash
 
 #mit cali
 
-roslaunch ur_robot_driver ur5_bringup.launch limited:=true robot_ip:=192.168.0.100  kinematics_config:=${HOME}/my_robot_calibration.yaml
+roslaunch ur_robot_driver ur5_bringup.launch limited:=true robot_ip:=192.168.0.107  kinematics_config:=${HOME}/my_robot_calibration.yaml
 
 #roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=192.168.11.11 kinematics_config:=${HOME}/ur5e_calibration.yaml
 
@@ -36,6 +36,12 @@ roslaunch ur_robot_driver ur5_bringup.launch limited:=true robot_ip:=192.168.0.1
 source /opt/ros/noetic/setup.bash
 
 roslaunch ur5_moveit_config moveit_planning_execution.launch
+
+######################
+
+source /home/ca/catkin_ws/devel/setup.bash
+
+roslaunch ur5e_robotiq_85_mtc moveit_planning_execution.launch
 
 ######################
 

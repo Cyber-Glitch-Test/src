@@ -120,7 +120,10 @@ savety_koord_2 = np.array([-0.24, -0.7, 0.04])
 
 use_built_in_rb_control = True
 
-
+def wait_for_moveit():
+    rospy.loginfo("Warte auf MoveIt-Services...")
+    rospy.wait_for_service('/get_planning_scene')
+    rospy.loginfo("MoveIt bereit.")
 
 #======Robot Control Class======
 class RobotControl:
@@ -937,7 +940,7 @@ class get_Hum_mertics:
                 writer.writerow([f'{user} {rospy.Time.now()} elbogenwinkel links:  {left_angle}'])
             #return elbowangle
 
-robot_control = RobotControl("manipulator")
+
     
 ################################ Initialisiere Smachstates ################################
 class Start(smach.State):
@@ -1028,8 +1031,7 @@ class MPickUp(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'succeeded_with_HD','aborted'])
         #self.robot_control = robot_control
-        if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
-                    return 'aborted'
+        
         self.counter = 0
 
     def execute(self, userdata):
@@ -1046,7 +1048,8 @@ class MPickUp(smach.State):
         while True:
             newuser = input('enter y/n: ')
             if newuser == "y":
-
+                if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
+                    return 'aborted'
                 # if not robot_control.move_to_joint_goal( (-3.1557, -1.0119, -2.1765, -1.5426, 1.5686, -3.1643), 10):
                 #     return 'aborted'
                 # if not robot_control.gripper_controller.send_gripper_command('close'):
@@ -1306,7 +1309,10 @@ class Test(smach.State):
 
 if __name__ == "__main__":
 
+
     rospy.init_node('ur5_moveit_control', anonymous=True)
+    wait_for_moveit()
+    robot_control = RobotControl("manipulator")
     moveit_commander.roscpp_initialize(sys.argv)
     robot_control.gripper_controller.send_gripper_command('reset')
     robot_control.gripper_controller.send_gripper_command('activate')

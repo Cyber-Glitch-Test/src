@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the data
-csv_file = 'armlaengen_luka.csv'
+csv_file = 'armlaengen_niko.csv'
 data = pd.read_csv(csv_file, header=None, names=['RawData'])
 
 # Debug: Check the raw data

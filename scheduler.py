@@ -459,7 +459,7 @@ class RobotControl:
                     handover_point.point.y = -translation[1]
                     handover_point.point.z = translation[2]
 
-                    #time.sleep(3)
+                    time.sleep(3)
 
                     listener.waitForTransform("base","shoulder", rospy.Time(0), rospy.Duration(4.0))
                         
@@ -470,7 +470,7 @@ class RobotControl:
                         "handover_position",
                         "shoulder"
                     )
-                    #time.sleep(3)
+                    time.sleep(3)
                     #atest_time = listener.getLatestCommonTime("base", "handover_position")
                     listener.waitForTransform("base","handover_position", rospy.Time(0) , rospy.Duration(4.0))
                     hand_over_position_koords, _ = listener.lookupTransform("base","handover_position",  rospy.Time(0))
@@ -871,9 +871,9 @@ class get_Hum_mertics:
     def calc_arm_lenght(self):
     #bestimme ober und unterarm länge
         #self.camera_listener()
-        self.camera_listener_arms()
-        self.uperarmlenght = self.calc_euclidean_distance(self.leftshoulderkoords,  self.leftelbowkoords)
-        self.forearmlenght = self.calc_euclidean_distance(self.lefthandkoords,      self.leftelbowkoords)
+        self.camera_listener()
+        self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
+        self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
         self.is_inside_norm()
 
         with open(f'armlaengen{user}.csv', 'a', newline='') as f:

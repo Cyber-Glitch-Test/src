@@ -102,11 +102,11 @@ rb_arm_on_battery =[np.array([0.6057899329831553, -0.019193581297668794, 0.15691
 
 
 #Konstanten für ergonomie Berechnungen
-forearmlenghdin = 0.2695  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
+forearmlenghdin = 0.3325  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 upperarmlenghtdin = 0.3425  # Aus DIN 33402-2 gemittelt aus Mann und Frau über alle Altersklassen
 
-forearmlenghdin_max = 0.355 #
-forearmlenghdin_min = 0.187 #
+forearmlenghdin_max = 0.395 #
+forearmlenghdin_min = 0.285 #
 
 upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #

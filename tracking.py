@@ -168,7 +168,7 @@ while not rospy.is_shutdown():
         y_left_elbow = max(0, min(y_left_elbow, color_image.shape[0] - 1))
 
 
-        left_hand_landmark = results.pose_landmarks.landmark[15]
+        left_hand_landmark = results.pose_landmarks.landmark[19]
         x_left_hand = int(left_hand_landmark.x * color_image.shape[1])
         y_left_hand = int(left_hand_landmark.y * color_image.shape[0])
 
@@ -194,7 +194,7 @@ while not rospy.is_shutdown():
         y_right_elbow = max(0, min(y_right_elbow, color_image.shape[0] - 1))
 
 
-        right_hand_landmark = results.pose_landmarks.landmark[16]
+        right_hand_landmark = results.pose_landmarks.landmark[20]
         x_right_hand = int(right_hand_landmark.x * color_image.shape[1])
         y_right_hand = int(right_hand_landmark.y * color_image.shape[0])
 

@@ -428,7 +428,7 @@ class RobotControl:
             return False
         return True
 
-    def calc_handover_position_schoulder(self):
+    def calc_handover_position_schoulder(self,listener_lc):
         #Berechnet die ergonomischste Übergabeposition basierend auf Schulterkoordinaten aus Tracking
         
         for i in range(1):
@@ -482,7 +482,7 @@ class RobotControl:
 
                     time.sleep(3)
 
-                    listener.waitForTransform("base","shoulder", rospy.Time(0), rospy.Duration(4.0))
+                    listener_lc.waitForTransform("base","shoulder", rospy.Time(0), rospy.Duration(4.0))
                         
                     broadcaster.sendTransform(
                         (handover_point.point.x, handover_point.point.y,handover_point.point.z),
@@ -493,8 +493,8 @@ class RobotControl:
                     )
                     time.sleep(3)
                     #atest_time = listener.getLatestCommonTime("base", "handover_position")
-                    listener.waitForTransform("base","handover_position", rospy.Time(0) , rospy.Duration(4.0))
-                    hand_over_position_koords, _ = listener.lookupTransform("base","handover_position",  rospy.Time(0))
+                    listener_lc.waitForTransform("base","handover_position", rospy.Time(0) , rospy.Duration(4.0))
+                    hand_over_position_koords, _ = listener_lc.lookupTransform("base","handover_position",  rospy.Time(0))
 
                     
                     

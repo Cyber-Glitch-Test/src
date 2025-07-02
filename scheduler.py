@@ -30,7 +30,7 @@ from robotiq_2f_gripper_control.msg import Robotiq2FGripper_robot_output, Roboti
 #test
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [0.4885036803216398, 0.4954440365879754, -0.506671308776122, 0.5091007226322881]
+tcp_to_hum = [0.48860127029211464, -0.499669580066056, 0.5016241574503718, 0.5098748023659809]
 
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
@@ -902,6 +902,8 @@ class get_Hum_mertics:
         self.camera_listener()
         self.uperarmlenght = self.calc_euclidean_distance(self.shoulderkoords,  self.elbowkoords)
         self.forearmlenght = self.calc_euclidean_distance(self.handkoords,      self.elbowkoords)
+        rospy.loginfo(f"Oberarmlänge: {self.uperarmlenght}")
+        rospy.loginfo(f"Unterarmlänge: {self.forearmlenght}")
         self.is_inside_norm()
 
         with open(f'armlaengen{user}.csv', 'a', newline='') as f:

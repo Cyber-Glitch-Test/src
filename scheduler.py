@@ -381,7 +381,10 @@ class RobotControl:
     def handover_to_hum(self, speed):
         rospy.loginfo("Starte Übergabe an den Menschen...")
 
+        speed += speed * (random.uniform(-50, 50) / 100)
+        
         max_retries = 3
+
         for attempt in range(1, max_retries + 1):
             rospy.loginfo(f"Versuch {attempt} von {max_retries}...")
 
@@ -530,6 +533,8 @@ class RobotControl:
 
     def pick_up(self,target,speed=10):
         #Nehme Bautteile auf die bei Target liegen
+
+        speed += speed * (random.uniform(-20, 20) / 100)
 
         over_target = target.copy()
         over_target[2] = over_target[2] + 0.1  
@@ -712,6 +717,8 @@ class RobotControl:
 
     def place_on_board(self,target,speed,distance=0.2,gripper_val = 'open'):
         #Bautteile auf grundplatte ablegen
+
+        speed += speed * (random.uniform(-40, 40) / 100)
 
         next_board = target.copy()
         over_board = target.copy()

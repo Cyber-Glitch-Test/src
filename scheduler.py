@@ -30,7 +30,7 @@ from robotiq_2f_gripper_control.msg import Robotiq2FGripper_robot_output, Roboti
 #test
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [0.48860127029211464, -0.499669580066056, 0.5016241574503718, 0.5098748023659809]
+tcp_to_hum = [0.47471946904520335, 0.508672230393878, -0.5204373469522815, 0.4950140963981013]
 
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
@@ -99,6 +99,8 @@ rb_arm_on_battery =[np.array([0.6057899329831553, -0.019193581297668794, 0.15691
                     np.array([0.6057899329831553,  0.103193581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
                     np.array([0.7017839913625549, -0.019193581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502]),
                     np.array([0.7017839913625549,  0.101393581297668794, 0.15691817631772764   ,0.001276412480525014, -0.9999579745548456, 0.0048883027126173095, 0.007650123655222502])]
+
+rb_arm_to_hum_sta = np.array([-0.021777125261783766, -0.37363507849091354, 0.19917983570199801, 0.47471946904520335, 0.508672230393878, -0.5204373469522815, 0.4950140963981013])
 
 
 #Konstanten für ergonomie Berechnungen
@@ -1111,12 +1113,18 @@ class MHold(smach.State):
         newuser = input('enter y/n: ')
         while True:
             if newuser == "y":
+                if not robot_control.move_to_target_cartesian(robot_control.convert_to_pose(rb_arm_to_hum_sta), 20):
+                    return 'aborted'
                 self.hm.stop_event = threading.Event()
                 thread = threading.Thread(target=self.hm.get_arm_angels)
                 thread.start()
                 input("Drücke Enter, um zu stoppen...\n")
                 self.hm.stop_event.set()
                 thread.join(timeout=2.0)
+                if not robot_control.move_to_joint_goal( (-3.8472, -1.0107, -2.3570, -2.8612, -0.7213, -1.6747), 20):
+                        return 'aborted'
+                return 'succeeded'
+
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded'

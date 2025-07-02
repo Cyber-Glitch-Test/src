@@ -19,8 +19,10 @@ def remove_outliers_iqr(df):
     IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
+    print(f"IQR: {IQR:.2f}")
     print(f"IQR bounds: {lower_bound:.2f} - {upper_bound:.2f}")
     return df[(df['Value'] >= lower_bound) & (df['Value'] <= upper_bound)]
+
 
 def remove_outliers_rolling_mad(df, window=5, thresh=3.5):
 
@@ -134,6 +136,27 @@ def remove_outliers_hampel(df, column='Value', window_size=10, n_sigmas=3):
     print(f"Hampel-Filter: {outlier_mask.sum()} Ausreißer erkannt und entfernt")
     return df[~outlier_mask]
 
+def remove_outliers_zscore(df, column='Value', thresh=3.0):
+    """
+    Entfernt Ausreißer basierend auf dem Z-Score.
+
+    Args:
+        df (pd.DataFrame): DataFrame mit der Spalte 'Value'
+        column (str): Spaltenname für die Werte
+        thresh (float): Z-Score-Schwellenwert für Ausreißer
+
+    Returns:
+        pd.DataFrame: Gefilterte Daten ohne Ausreißer
+    """
+    values = df[column]
+    mean = values.mean()
+    std = values.std()
+    z_scores = (values - mean) / (std if std != 0 else 1e-6)
+    outlier_mask = z_scores.abs() > thresh
+    print(f"Z-Score-Filter: {outlier_mask.sum()} Ausreißer erkannt und entfernt")
+    return df[~outlier_mask]
+
+
 # Dateien & Personen
 dateien = [
     ('armlaengen_niko.csv', 'Niko'),
@@ -167,8 +190,11 @@ for person in data_all['Person'].unique():
         # plt.tight_layout(rect=[0, 0, 1, 0.96])
         # plt.show()
         # Für die weitere Analyse z.B. thresh=2 verwenden:
-        df_part_clean = remove_outliers_mad(df_part_clean, thresh=2.5)
-        #df_part_clean = df_part_clean
+        #df_part_clean = remove_outliers_mad(df_part_clean, thresh=2.5)
+        #df_part_clean  = remove_outliers_zscore(df_part_clean, column='Value', thresh=3.0)
+
+        #df_part_clean = remove_outliers_iqr(df_part_clean)
+        df_part_clean = df_part_clean
         data_clean = pd.concat([data_clean, df_part_clean], ignore_index=True)
 
 # Ergonomiewerte für alle zusammen (links/rechts getrennt)

@@ -111,7 +111,7 @@ forearmlenghdin_min = 0.285 #
 upperarmlenghtdin_max = 0.405 #
 upperarmlenghtdin_min = 0.285 #
 
-tcp_coversion = 0.25
+tcp_coversion = 0.15
 
 savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
 savety_koord_2 = np.array([-0.24, -0.7, 0.04])

@@ -30,7 +30,7 @@ from robotiq_2f_gripper_control.msg import Robotiq2FGripper_robot_output, Roboti
 #test
 #======Konstanten====== 
 #Konstanten für TCP-Ausrichtung
-tcp_to_hum = [0.4885036803216398, 0.4954440365879754, -0.506671308776122, 0.5091007226322881]
+tcp_to_hum = [0.48860127029211464, -0.499669580066056, 0.5016241574503718, 0.5098748023659809]
 
 #Konstanten für Roboterposen
 rb_arm_home = np.array([-0.28531283917512756,  0.08176575019716574, 0.3565888897535509, 0.021838185570339213, -0.9997536365149914, 0.0006507883874787611, 0.003916171666392069])
@@ -113,8 +113,8 @@ upperarmlenghtdin_min = 0.285 #
 
 tcp_coversion = 0.15
 
-savety_koord_1 = np.array([ 0.20,  0.3, 0.6])
-savety_koord_2 = np.array([-0.24, -0.7, 0.04])
+savety_koord_1 = np.array([ 0.10,  0.3, 0.6])
+savety_koord_2 = np.array([-0.24, -0.7, 0.08])
 
 
 
@@ -1233,6 +1233,7 @@ class PCB3PickUpAndPositioning(smach.State):
 
             while True:
                 newuser = input('enter y/n: ')
+
                 if newuser == "y":
                     
                     if not robot_control.pick_up(rb_arm_on_pcb3[self.counter]):

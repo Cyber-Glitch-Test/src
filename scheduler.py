@@ -1100,8 +1100,7 @@ class MPickUp(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_with_HD'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
 
 class MHold(smach.State):
     def __init__(self):
@@ -1121,8 +1120,7 @@ class MHold(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
                 
 class MHoldHD(smach.State):
     def __init__(self):
@@ -1161,8 +1159,7 @@ class MHoldHD(smach.State):
 
                         continue
 
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
             
 class MPositioning(smach.State):
     def __init__(self):
@@ -1189,8 +1186,7 @@ class MPositioning(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_to_PCB'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
 
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1213,8 +1209,7 @@ class PCB1PickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("weiter")
                 return 'succeeded'  
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")      
+                   
 
 class PCB2PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1237,8 +1232,7 @@ class PCB2PickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("Exiting")
                 return 'succeeded'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
 
 class PCB3PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1293,8 +1287,7 @@ class BatteryPickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("Exiting")
                 return 'succeeded'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
 
 class Aborted(smach.State):
     def __init__(self):
@@ -1308,8 +1301,7 @@ class Aborted(smach.State):
                 return 'start'
             elif newuser == "n":
                 return 'succeeded_end'
-            else:
-                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+             
 
 class Test(smach.State):
     def __init__(self):

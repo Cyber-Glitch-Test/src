@@ -378,26 +378,47 @@ class RobotControl:
         self.move_group.go(wait=True)
         rospy.loginfo("Roboter auf 'Home' Position zurückgesetzt!")
 
-    def handover_to_hum(self,speed):
-        #führe die Roboter bewegung zum Probanten aus
-        handover_pose_end = Pose()
-        try:
-            handover_pose_end =  self.point_inside(self.calc_handover_position_schoulder())
-        except:
-            return False
+    def handover_to_hum(self, speed):
+        rospy.loginfo("Starte Übergabe an den Menschen...")
 
-        handover_pose_start = copy.deepcopy(handover_pose_end)
-        handover_pose_start.position.y = handover_pose_end.position.y + 0.1
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            rospy.loginfo(f"Versuch {attempt} von {max_retries}...")
 
-        if not use_built_in_rb_control:
-            command =   [{'type':'cartesian','pose':handover_pose_start},
-                         {'type':'cartesian','pose':handover_pose_end},
-                         {'type':'stop'}]
-            
-            if not self.publish_rb_cmds(command):
-                return False
-            
+            # Lokaler TF-Listener
+            local_listener = tf.TransformListener()
+
+            try:
+                handover_pose_end = self.point_inside(self.calc_handover_position_schoulder(local_listener))
+            except Exception as e:
+                rospy.logwarn(f"Fehler bei der Berechnung der Übergabeposition: {e}")
+                handover_pose_end = None
+
+            if handover_pose_end is None:
+                rospy.logwarn("Übergabeposition konnte nicht bestimmt werden.")
+                time.sleep(2)
+                continue
+
+            handover_pose_start = copy.deepcopy(handover_pose_end)
+            handover_pose_start.position.y += 0.1
+
+            rospy.loginfo("Bewege Roboter zur Startposition der Übergabe...")
+            if not self.move_to_target_carth(handover_pose_start, speed):
+                rospy.logwarn("Bewegung zur Startposition fehlgeschlagen.")
+                time.sleep(2)
+                continue
+
+            rospy.loginfo("Bewege Roboter zur Übergabeposition...")
+            if not self.move_to_target_carth(handover_pose_end, speed):
+                rospy.logwarn("Bewegung zur Übergabeposition fehlgeschlagen.")
+                time.sleep(2)
+                continue
+
+            rospy.loginfo("Übergabe erfolgreich abgeschlossen.")
             return True
+
+        rospy.logerr("Übergabe nach mehreren Versuchen fehlgeschlagen.")
+        return False
         
         rospy.loginfo("Bewege Roboter zu: x={}, y={}, z={}".format(handover_pose_start.position.x, handover_pose_start.position.y, handover_pose_start.position.z))
 

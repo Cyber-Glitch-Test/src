@@ -1100,6 +1100,8 @@ class MPickUp(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded_with_HD'
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
 
 class MHold(smach.State):
     def __init__(self):
@@ -1119,6 +1121,8 @@ class MHold(smach.State):
             elif newuser == "n":
                 rospy.loginfo('weiter')
                 return 'succeeded'
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
                 
 class MHoldHD(smach.State):
     def __init__(self):
@@ -1157,7 +1161,8 @@ class MHoldHD(smach.State):
 
                         continue
 
-                continue
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
             
 class MPositioning(smach.State):
     def __init__(self):
@@ -1172,17 +1177,20 @@ class MPositioning(smach.State):
         #self.counter += 1
         
         newuser = input('enter y/n: ')
-        if newuser == "y":
-            if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
-                return 'aborted'
-            self.counter += 1
-            if not (self.counter % 4==0):
-                return 'succeeded'
-            else:
+        while True:
+            if newuser == "y":
+                if not robot_control.place_on_board(rb_arm_place_m_on_gb,20,0.02):
+                    return 'aborted'
+                self.counter += 1
+                if not (self.counter % 4==0):
+                    return 'succeeded'
+                else:
+                    return 'succeeded_to_PCB'
+            elif newuser == "n":
+                rospy.loginfo('weiter')
                 return 'succeeded_to_PCB'
-        elif newuser == "n":
-            rospy.loginfo('weiter')
-            return 'succeeded_to_PCB'
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
 
 class PCB1PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1204,7 +1212,9 @@ class PCB1PickUpAndPositioning(smach.State):
                 return 'succeeded'
             elif newuser == "n":
                 print("weiter")
-                return 'succeeded'        
+                return 'succeeded'  
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")      
 
 class PCB2PickUpAndPositioning(smach.State):
     def __init__(self):
@@ -1227,7 +1237,9 @@ class PCB2PickUpAndPositioning(smach.State):
             elif newuser == "n":
                 print("Exiting")
                 return 'succeeded'
-            
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
+
 class PCB3PickUpAndPositioning(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','aborted'])
@@ -1256,6 +1268,8 @@ class PCB3PickUpAndPositioning(smach.State):
                 elif newuser == "n":
                     print("Exiting")
                     return 'succeeded'
+                else:
+                    print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
         else:
             return 'succeeded'
 
@@ -1278,7 +1292,9 @@ class BatteryPickUpAndPositioning(smach.State):
             
             elif newuser == "n":
                 print("Exiting")
-                return 'succeeded' 
+                return 'succeeded'
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
 
 class Aborted(smach.State):
     def __init__(self):
@@ -1292,6 +1308,8 @@ class Aborted(smach.State):
                 return 'start'
             elif newuser == "n":
                 return 'succeeded_end'
+            else:
+                print("Ungültige Eingabe. Bitte 'y' oder 'n' eingeben.")
 
 class Test(smach.State):
     def __init__(self):

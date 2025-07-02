@@ -382,7 +382,7 @@ class RobotControl:
         rospy.loginfo("Starte Übergabe an den Menschen...")
 
         speed += speed * (random.uniform(-50, 50) / 100)
-        
+        rospy.loginfo(f'geschwindigkeit: {speed}') 
         max_retries = 3
 
         for attempt in range(1, max_retries + 1):
@@ -535,7 +535,7 @@ class RobotControl:
         #Nehme Bautteile auf die bei Target liegen
 
         speed += speed * (random.uniform(-20, 20) / 100)
-
+        rospy.loginfo(f'geschwindigkeit: {speed}') 
         over_target = target.copy()
         over_target[2] = over_target[2] + 0.1  
         
@@ -719,7 +719,7 @@ class RobotControl:
         #Bautteile auf grundplatte ablegen
 
         speed += speed * (random.uniform(-40, 40) / 100)
-
+        rospy.loginfo(f'geschwindigkeit: {speed}')    
         next_board = target.copy()
         over_board = target.copy()
         next_board[1] = next_board[1] + distance

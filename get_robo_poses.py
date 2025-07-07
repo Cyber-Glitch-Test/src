@@ -83,7 +83,7 @@ def moveit_control_node():
             position = last_waypoint.position
             orientation = last_waypoint.orientation
             coordinates = f"np.array([{position.x}, {position.y}, {position.z}"
-            orientation_values = f"{orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}])"
+            orientation_values = f",{orientation.x}, {orientation.y}, {orientation.z}, {orientation.w}])"
 
             joint_goal = move_group.get_current_joint_values()
             joint_values = ", ".join([f"{val:.4f}" for val in joint_goal])  # Formatierte Ausgabe der Gelenkwerte
